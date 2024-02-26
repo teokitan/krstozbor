@@ -1,3 +1,7 @@
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -59,7 +63,7 @@ class CustomPositionSet {
 
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException {
         char [][] tabla = new char[19][14];
 
 
@@ -81,7 +85,10 @@ public class Main {
             System.out.println();
         }
 
-        List<String> zborovi = List.of(
+        BufferedReader br = new BufferedReader(new FileReader("C:\\Users\\darso\\Desktop\\krstozbor\\src\\recnik.csv"));
+        List<String> zborovi = br.lines().map(x -> x.split(",")[1]).toList();
+
+        List<String> records = List.of(
                 "дом",   // dom (house)
                 "животно",  // zhivotno (animal)
                 "цвет", // cvet (color)
