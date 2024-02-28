@@ -11,11 +11,13 @@ class Position implements Comparable<Position> {
     int y;
     int length;
     char direction;
+    Map<Integer, PositionIntersect> intersecting;
 
     public Position(int x, int y) {
         this.x = x;
         this.y = y;
         this.length = -1;
+        this.intersecting = new HashMap<>();
     }
 
     public Position(int x, int y, char direction) {
@@ -23,6 +25,7 @@ class Position implements Comparable<Position> {
         this.y = y;
         this.direction = direction;
         this.length = -1;
+        this.intersecting = new HashMap<>();
     }
 
     @Override
@@ -230,6 +233,32 @@ public class Main {
                 p.length = 18 - p.x;
                 prevCoordinate.set(p.y);
             }
+
+            poziciiVoRed.forEach(pos -> {
+                List<Position> intersecting = IntStream.range(pos.x + 1, pos.x + pos.length + 1)
+                        .mapToObj(horizontalniZborovi::get)
+                        .flatMap(Collection::stream)
+                        .filter(w -> w.y < pos.y && w.length - w.y >= pos.y)
+                        .toList();
+
+                pos.intersecting = intersecting.stream()
+                        .collect(Collectors.toMap(intsct -> intsct.x - pos.x - 1, intsct -> new PositionIntersect(intsct, pos.y - intsct.y - 1)));
+            });
+        });
+
+        horizontalniZborovi.keySet().forEach(x -> {
+            List<Position> poziciiVoRed = horizontalniZborovi.get(x).stream().toList();
+
+            poziciiVoRed.forEach(pos -> {
+                List<Position> intersecting = IntStream.range(pos.y + 1, pos.y + pos.length + 1)
+                        .mapToObj(vertikalniZborovi::get)
+                        .flatMap(Collection::stream)
+                        .filter(w -> w.x < pos.x && w.length - w.x >= pos.x)
+                        .toList();
+
+                pos.intersecting = intersecting.stream()
+                        .collect(Collectors.toMap(intsct -> intsct.y - pos.y - 1, intsct -> new PositionIntersect(intsct, pos.x - intsct.x - 1)));
+            });
         });
 
 
@@ -246,6 +275,7 @@ public class Main {
         CSP<Position, String> krstozbor = new CSP<>(listaPozicii, domain);
         krstozbor.addConstraint(new WordLengthConstraint(listaPozicii));
         krstozbor.addConstraint(new AllDifferentConstraint(listaPozicii));
+        krstozbor.addConstraint(new IntersectionConstraint(listaPozicii));
         Map<Position, String> resenie = krstozbor.backtrack(new HashMap<>());
 
         System.out.println();
