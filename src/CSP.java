@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class CSP <T, U> {
     private List<T> variables;
@@ -27,6 +28,29 @@ public class CSP <T, U> {
         return constraints.get(var).stream().allMatch(x -> x.checkConstraint(solution));
     }
 
+    public Map<T, U> backtrack (Map<T, U> solution)
+    {
+        if(solution.size() == variables.size())
+        {
+            return solution;
+        }
 
+        T var = variables.stream().filter(x -> !solution.containsKey(x)).findFirst().get();
+
+        for(U dom : domains.get(var))
+        {
+            Map<T, U> temp = new HashMap<>(solution);
+            temp.put(var, dom);
+            if(solutionValid(var, temp))
+            {
+                Map<T, U> finalResult = backtrack(temp);
+                if(finalResult != null)
+                {
+                    return finalResult;
+                }
+            }
+        }
+        return null;
+    }
 
 }

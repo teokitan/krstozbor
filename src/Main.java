@@ -237,13 +237,17 @@ public class Main {
         System.out.println(zboroviMapirani.get(6).get('а').get(1));
         Set<String> filtrirani = new HashSet<>(zboroviMapirani.get(6).get('б').get(0));
         filtrirani.retainAll(zboroviMapirani.get(6).get('а').get(1));
+        List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length != 0).toList();
         System.out.println(filtrirani);
-//        Map<Integer, Map<Character, Map<Integer, Set<String>>>>
         Map<Position, List<String>> domain = customPositionSet.positions.stream()
                 .collect(Collectors.toMap(
                         x -> x,
-                        x -> zboroviMapirani.get(x.length).values().stream().flatMap(val -> val.values().stream().flatMap(Collection::stream)).collect(Collectors.toList())));
-        CSP<Position, String> krstozbor = new CSP<>(customPositionSet.positions.stream().toList(), domain);
+                        x -> zboroviMapirani.getOrDefault(x.length, new HashMap<>()).values().stream().flatMap(val -> val.values().stream().flatMap(Collection::stream)).collect(Collectors.toList())));
+        CSP<Position, String> krstozbor = new CSP<>(listaPozicii, domain);
+        krstozbor.addConstraint(new WordLengthConstraint(listaPozicii));
+        krstozbor.addConstraint(new AllDifferentConstraint(listaPozicii));
+        Map<Position, String> resenie = krstozbor.backtrack(new HashMap<>());
 
+        System.out.println();
     }
 }
