@@ -1,32 +1,60 @@
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-class Position {
+class Position implements Comparable<Position> {
     int x;
     int y;
+    int length;
+    char direction;
 
     public Position(int x, int y) {
         this.x = x;
         this.y = y;
+        this.length = -1;
     }
 
+    public Position(int x, int y, char direction) {
+        this.x = x;
+        this.y = y;
+        this.direction = direction;
+        this.length = -1;
+    }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Position position = (Position) o;
-        return x == position.x && y == position.y;
+        return x == position.x && y == position.y && position.direction == direction;
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(x, y);
+    }
+
+    @Override
+    public int compareTo(Position o) {
+        if(this.x - o.x == 0)
+        {
+            return this.y - o.y;
+        }
+        return this.x - o.x;
+    }
+
+    @Override
+    public String toString() {
+        return "Position{" +
+                "x=" + x +
+                ", y=" + y +
+                ", length=" + length +
+                ", direction=" + direction +
+                '}';
     }
 }
 
@@ -34,30 +62,79 @@ class CustomPositionSet {
     Set<Position> positions = new HashSet<>();
 
     public CustomPositionSet() {
-        positions.addAll(IntStream.range(0, 19).mapToObj(x -> new Position(x, 0)).toList());
-        positions.addAll(IntStream.range(0, 14).mapToObj(x -> new Position(0, x)).toList());
+        positions.addAll(IntStream.range(1, 19).mapToObj(x -> new Position(x, 0, 'h')).toList());
+        positions.addAll(IntStream.range(1, 14).mapToObj(x -> new Position(0, x, 'v')).toList());
     }
 
-    public boolean add(Position position) {
-        if(positions.stream().noneMatch(x -> x.x == position.x && x.y == position.y + 1)  ||
-                positions.stream().noneMatch(x -> x.x == position.x + 1 && x.y == position.y)) {
-            if (position.x == 18) {
-                if (positions.stream().noneMatch(x -> x.x == position.x && x.y == position.y - 1) &&
-                        positions.stream().noneMatch(x -> x.x == position.x && x.y == position.y + 1)) {
-                    return positions.add(position);
-                }
-                return false;
-            }
-            if (position.y == 13) {
-                if (positions.stream().noneMatch(x -> x.x == position.x - 1 && x.y == position.y ) &&
-                        positions.stream().noneMatch(x -> x.x == position.x + 1 && x.y == position.y)) {
-                    return positions.add(position);
-                }
-                return false;
-            }
-            return positions.add(position);
+    public char [][] tabla () {
+        char [][] tabla = new char[19][14];
+        positions.forEach(x -> tabla[x.x][x.y] = 'X');
+        return tabla;
+    }
+
+    public boolean add(Position position)
+    {
+
+        if(position.x == 18 && position.y == 13)
+        {
+            return false;
         }
-        return false;
+
+        char [][] tabla = tabla();
+        tabla[position.x][position.y] = 'X';
+        for(int i = 0; i < 18; i++)
+        {
+            for(int j = 0; j < 13; j++)
+            {
+                if(i == 0 && j == 0)
+                {
+                    continue;
+                }
+                if(tabla[i][j] == 'X' && (tabla[i][j + 1] == 'X' && tabla[i + 1][j] == 'X'))
+                {
+                    return false;
+                }
+            }
+        }
+
+        for(int i = 0; i < 18; i++)
+        {
+            if(tabla[i][13] == 'X' && tabla[i + 1][13] == 'X')
+            {
+                return false;
+            }
+        }
+
+        for(int i = 0; i < 13; i++)
+        {
+            if(tabla[18][i] == 'X' && tabla[18][i + 1] == 'X')
+            {
+                return false;
+            }
+        }
+
+        try
+        {
+            if(tabla[position.x][position.y + 1] != 'X')
+            {
+                position.direction = 'h';
+                positions.add(position);
+            }
+        }
+        catch (Exception ex) {}
+
+        try
+        {
+            if(tabla[position.x + 1][position.y] != 'X')
+            {
+                Position pos = new Position(position.x, position.y);
+                pos.direction = 'v';
+                positions.add(pos);
+            }
+        }
+        catch (Exception ex) {}
+
+        return true;
     }
 }
 
@@ -85,113 +162,11 @@ public class Main {
             System.out.println();
         }
 
-        BufferedReader br = new BufferedReader(new FileReader("C:\\Users\\darso\\Desktop\\krstozbor\\src\\recnik.csv"));
+        BufferedReader br = new BufferedReader(new FileReader(".\\recnik.csv"));
         List<String> zborovi = br.lines().map(x -> x.split(",")[1]).toList();
 
-        List<String> records = List.of(
-                "дом",   // dom (house)
-                "животно",  // zhivotno (animal)
-                "цвет", // cvet (color)
-                "планина",  // planina (mountain)
-                "сонце",  // sonce (sun)
-                "месец",  // mesec (moon)
-                "вода",  // voda (water)
-                "оган",  // ogan (fire)
-                "земја",  // zemja (earth)
-                "ветер",  // veter (wind)
-                "дърво",  // darvo (tree)
-                "цвете",  // cvete (flower)
-                "град",  // grad (city)
-                "село",  // selo (village)
-                "птица",  // ptica (bird)
-                "риба",  // riba (fish)
-                "плод",  // plod (fruit)
-                "зеленчук",  // zelenchuk (vegetable)
-                "живот",  // zhivot (life)
-                "смрт",  // smrt (death)
-                "љубов",  // ljubov (love)
-                "среќа",  // srekja (happiness)
-                "тага",  // taga (sadness)
-                "смех",  // smeh (laughter)
-                "солза",  // solza (tear)
-                "небо",  // nebo (sky)
-                "звезда",  // zvezda (star)
-                "планета",  // planeta (planet)
-                "универзум",  // univerzum (universe)
-                "галаксија",  // galaksija (galaxy)
-                "млечен пат",  // mlechen pat (Milky Way)
-                "сателит",  // satelit (satellite)
-                "комета",  // kometa (comet)
-                "астронаут",  // astronaut (astronaut)
-                "луѓе",  // lugje (people)
-                "дете",  // dete (child)
-                "родители",  // roditeli (parents)
-                "брат",  // brat (brother)
-                "сестра",  // sestra (sister)
-                "маж",  // mazh (husband)
-                "жена",  // zhena (wife)
-                "мама",  // mama (mom)
-                "татко",  // tatko (dad)
-                "баба",  // baba (grandmother)
-                "дедо",  // dedo (grandfather)
-                "син",  // sin (son)
-                "ќерка",  // kjerka (daughter)
-                "бебе",  // bebe (baby)
-                "пријател",  // prijatel (friend)
-                "непријател",  // neprijatel (enemy)
-                "радост",  // radost (joy)
-                "печал",  // pechal (sorrow)
-                "гордост",  // gordost (pride)
-                "срам",  // sram (shame)
-                "страв",  // strav (fear)
-                "надеж",  // nadezh (hope)
-                "вера",  // vera (faith)
-                "двоместо",  // dvomesto (chair)
-                "маса",  // masa (table)
-                "соба",  // soba (room)
-                "кујна",  // kujna (kitchen)
-                "спална соба",  // spalna soba (bedroom)
-                "бања",  // banja (bathroom)
-                "дневна соба",  // dnevna soba (living room)
-                "тераса",  // terasa (terrace)
-                "балкон",  // balkon (balcony)
-                "врати",  // vrat (door)
-                "прозорци",  // prozorci (windows)
-                "под",  // pod (floor)
-                "таван",  // tavan (attic)
-                "спрат",  // sprat (storey)
-                "степеници",  // stepenici (stairs)
-                "рампа",  // rampa (ramp)
-                "порти",  // porti (gate)
-                "ограда",  // ograda (fence)
-                "сад",  // sad (garden)
-                "бараба",  // baraba (drum)
-                "траба",  // traba (trumpet)
-                "цигулка",  // cigulka (violin)
-                "китара",  // kitara (guitar)
-                "клавир",  // klavir (piano)
-                "флејта",  // flejta (flute)
-                "саксофон",  // saksofon (saxophone)
-                "бубњар",  // bubnjar (drummer)
-                "пејач",  // pejach (singer)
-                "глумец",  // glumec (actor)
-                "глумица",  // glumica (actress)
-                "режисер",  // reziser (director)
-                "сценарист",  // scenarist (screenwriter)
-                "камера",  // kamera (camera)
-                "микрофон",  // mikrofon (microphone)
-                "светло",  // svetlo (light)
-                "звук",  // zvuk (sound)
-                "боја",  // boja (paint)
-                "кист",  // kist (brush)
-                "платно",  // platno (canvas)
-                "слика",  // slika (picture)
-                "уметник",  // umetnik (artist)
-                "галерија"  // galerija (gallery)
-        );
-
         String azbuka = "абвгдѓеѕжзијклљмнњопрстќуфхцчџш";
-        Integer maxDolzina = zborovi.stream().mapToInt(x -> x.length()).max().getAsInt();
+        int maxDolzina = zborovi.stream().mapToInt(String::length).max().orElse(0);
         Map<Integer, Map<Character, Map<Integer, Set<String>>>> zboroviMapirani = new TreeMap<>();
         zborovi.stream().map(String::length).forEach(x -> zboroviMapirani.putIfAbsent(x, new TreeMap<>()));
         zboroviMapirani.values().stream().forEach(x -> {
@@ -201,11 +176,11 @@ public class Main {
             IntStream.range(0, maxDolzina).forEach(y -> x.putIfAbsent(y, new TreeSet<>()));
         });
 
-        zboroviMapirani.entrySet().stream().forEach(x -> {
+        zboroviMapirani.entrySet().forEach(x -> {
             Set<String> filterZborovi = zborovi.stream().filter(zbor -> zbor.length() == x.getKey()).collect(Collectors.toSet());
-            x.getValue().entrySet().stream().forEach(y -> {
+            x.getValue().entrySet().forEach(y -> {
                 Set<String> filterFilterZborovi = filterZborovi.stream().filter(z -> z.contains(String.valueOf(y.getKey()))).collect(Collectors.toSet());
-                y.getValue().entrySet().stream().forEach(p -> p.setValue(filterFilterZborovi.stream().filter(zbor ->
+                y.getValue().entrySet().forEach(p -> p.setValue(filterFilterZborovi.stream().filter(zbor ->
                 {
                     if(zbor.length() > p.getKey())
                     {
@@ -216,11 +191,59 @@ public class Main {
             });
         });
 
+        Map<Integer, Set<Position>> horizontalniZborovi = customPositionSet.positions.stream().filter(x -> x.direction == 'h').collect(Collectors.groupingBy(x -> x.x, TreeMap::new, Collectors.toCollection(TreeSet::new)));
+        Map<Integer, Set<Position>> vertikalniZborovi = customPositionSet.positions.stream().filter(x -> x.direction == 'v').collect(Collectors.groupingBy(x -> x.y, TreeMap::new, Collectors.toCollection(TreeSet::new)));
+
+        AtomicInteger prevCoordinate = new AtomicInteger();
+        horizontalniZborovi.keySet().forEach(x -> {
+            List<Position> poziciiVoRed = horizontalniZborovi.get(x).stream().toList();
+            Iterator<Position> iter = poziciiVoRed.iterator();
+            prevCoordinate.set(poziciiVoRed.get(0).y);
+            for(int i = 1; i < poziciiVoRed.size(); i++)
+            {
+                Position p = poziciiVoRed.get(i - 1);
+                Position p1 = poziciiVoRed.get(i);
+                p.length = p1.y - p.y - 1;
+                prevCoordinate.set(p.y);
+            }
+            {
+                Position p = poziciiVoRed.get(poziciiVoRed.size() - 1);
+                p.length = 13 - p.y;
+                prevCoordinate.set(p.y);
+            }
+        });
+
+        vertikalniZborovi.keySet().forEach(x -> {
+            List<Position> poziciiVoRed = vertikalniZborovi.get(x).stream().toList();
+            Iterator<Position> iter = poziciiVoRed.iterator();
+            prevCoordinate.set(x);
+            Boolean newPos = false;
+            for(int i = 1; i < poziciiVoRed.size(); i++)
+            {
+                Position p = poziciiVoRed.get(i - 1);
+                Position p1 = poziciiVoRed.get(i);
+                p.length = p1.x - p.x - 1;
+                prevCoordinate.set(p.x);
+            }
+            {
+                Position p = poziciiVoRed.get(poziciiVoRed.size() - 1);
+                p.length = 18 - p.x;
+                prevCoordinate.set(p.y);
+            }
+        });
+
+
         System.out.println(zboroviMapirani.get(6).get('б').get(0));
         System.out.println(zboroviMapirani.get(6).get('а').get(1));
         Set<String> filtrirani = new HashSet<>(zboroviMapirani.get(6).get('б').get(0));
         filtrirani.retainAll(zboroviMapirani.get(6).get('а').get(1));
         System.out.println(filtrirani);
-        System.out.println("orel");
+//        Map<Integer, Map<Character, Map<Integer, Set<String>>>>
+        Map<Position, List<String>> domain = customPositionSet.positions.stream()
+                .collect(Collectors.toMap(
+                        x -> x,
+                        x -> zboroviMapirani.get(x.length).values().stream().flatMap(val -> val.values().stream().flatMap(Collection::stream)).collect(Collectors.toList())));
+        CSP<Position, String> krstozbor = new CSP<>(customPositionSet.positions.stream().toList(), domain);
+
     }
 }
