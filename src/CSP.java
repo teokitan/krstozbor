@@ -1,7 +1,5 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.crypto.spec.PSource;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CSP <T, U> {
@@ -41,15 +39,35 @@ public class CSP <T, U> {
         {
             Map<T, U> temp = new HashMap<>(solution);
             temp.put(var, dom);
+
             if(solutionValid(var, temp))
             {
+                Map<T,List<U>> domainsErased = new HashMap<>(domains);
+                for (T intersectingEmpty : variables.stream().filter(x ->
+                        (!solution.containsKey(x) && ((Position)x).intersecting.values().stream().anyMatch(y -> y.position == (Position)var))).toList()) {
+                    for (U dom2 : domains.get(var)) {
+                        temp.put(intersectingEmpty, dom2);
+                        if (!solutionValid(intersectingEmpty, temp)) {
+                            domainsErased.get(intersectingEmpty).remove(dom2);
+                        }
+                        temp.remove(intersectingEmpty, dom2);
+                    }
+                }
+
+                Map<T, List<U>> domainsBckp = new HashMap<>(domains);
+                domains = domainsErased;
+
                 Map<T, U> finalResult = backtrack(temp);
                 if(finalResult != null)
                 {
                     return finalResult;
                 }
+
+                domains = domainsBckp;
             }
+            //System.out.println(variables.stream().filter(solution::containsKey).count());
         }
+
         return null;
     }
 
