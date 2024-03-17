@@ -15,6 +15,10 @@ public class IntersectionConstraint extends Constraint<Position, String> {
                 continue;
             }
             if(!variable.intersecting.entrySet().stream().allMatch(var -> {
+                if(var.getValue().position.length < 4)
+                {
+                    return true;
+                }
                 if (solution.get(var.getValue().position) == null) {
                     return true;
                 }
