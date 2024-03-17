@@ -65,12 +65,12 @@ class CustomPositionSet {
     Set<Position> positions = new HashSet<>();
 
     public CustomPositionSet() {
-        positions.addAll(IntStream.range(1, 19).mapToObj(x -> new Position(x, 0, 'h')).toList());
-        positions.addAll(IntStream.range(1, 14).mapToObj(x -> new Position(0, x, 'v')).toList());
+        positions.addAll(IntStream.range(1, Main.length).mapToObj(x -> new Position(x, 0, 'h')).toList());
+        positions.addAll(IntStream.range(1, Main.width).mapToObj(x -> new Position(0, x, 'v')).toList());
     }
 
     public char [][] tabla () {
-        char [][] tabla = new char[19][14];
+        char [][] tabla = new char[Main.length][Main.width];
         positions.forEach(x -> tabla[x.x][x.y] = 'X');
         return tabla;
     }
@@ -78,16 +78,16 @@ class CustomPositionSet {
     public boolean add(Position position)
     {
 
-        if(position.x == 18 && position.y == 13)
+        if(position.x == Main.length-1 && position.y == Main.width-1)
         {
             return false;
         }
 
         char [][] tabla = tabla();
         tabla[position.x][position.y] = 'X';
-        for(int i = 0; i < 18; i++)
+        for(int i = 0; i < Main.length-1; i++)
         {
-            for(int j = 0; j < 13; j++)
+            for(int j = 0; j < Main.width-1; j++)
             {
                 if(i == 0 && j == 0)
                 {
@@ -100,17 +100,17 @@ class CustomPositionSet {
             }
         }
 
-        for(int i = 0; i < 18; i++)
+        for(int i = 0; i < Main.length-1; i++)
         {
-            if(tabla[i][13] == 'X' && tabla[i + 1][13] == 'X')
+            if(tabla[i][Main.width-1] == 'X' && tabla[i + 1][Main.width-1] == 'X')
             {
                 return false;
             }
         }
 
-        for(int i = 0; i < 13; i++)
+        for(int i = 0; i < Main.width-1; i++)
         {
-            if(tabla[18][i] == 'X' && tabla[18][i + 1] == 'X')
+            if(tabla[Main.length-1][i] == 'X' && tabla[Main.length-1][i + 1] == 'X')
             {
                 return false;
             }
@@ -143,29 +143,32 @@ class CustomPositionSet {
 
 
 public class Main {
+    public static final int length = 9;
+    public static final int width = 5;
+
     public static void main(String[] args) throws FileNotFoundException {
-        char [][] tabla = new char[19][14];
+        char [][] tabla = new char[length][width];
 
 
         CustomPositionSet customPositionSet = new CustomPositionSet();
         Random random = new Random();
 
-        while(customPositionSet.positions.size() <= 66)
+        while(customPositionSet.positions.size() <= 20)
         {
-            customPositionSet.add(new Position(random.nextInt(2, 19), random.nextInt(2, 14)));
+            customPositionSet.add(new Position(random.nextInt(2, length), random.nextInt(2, width)));
         }
         customPositionSet.positions.forEach(x -> tabla[x.x][x.y] = 'X');
 
-        for(int i = 0; i < 19; i++)
+        for(int i = 0; i < length; i++)
         {
-            for (int j = 0; j < 14; j++)
+            for (int j = 0; j < width; j++)
             {
                 System.out.print(tabla[i][j] + " ");
             }
             System.out.println();
         }
 
-        BufferedReader br = new BufferedReader(new FileReader(".\\recnik.csv"));
+        BufferedReader br = new BufferedReader(new FileReader("recnik.csv"));
         List<String> zborovi = br.lines().map(x -> x.split(",")[1]).toList();
 
         String azbuka = "абвгдѓеѕжзијклљмнњопрстќуфхцчџш";
@@ -211,7 +214,7 @@ public class Main {
             }
             {
                 Position p = poziciiVoRed.get(poziciiVoRed.size() - 1);
-                p.length = 13 - p.y;
+                p.length = width - 1 - p.y;
                 prevCoordinate.set(p.y);
             }
         });
@@ -230,7 +233,7 @@ public class Main {
             }
             {
                 Position p = poziciiVoRed.get(poziciiVoRed.size() - 1);
-                p.length = 18 - p.x;
+                p.length = length - 1 - p.x;
                 prevCoordinate.set(p.y);
             }
 
