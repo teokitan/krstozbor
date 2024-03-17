@@ -62,17 +62,37 @@ class Position implements Comparable<Position> {
 }
 
 class CustomPositionSet {
-    Set<Position> positions = new HashSet<>();
+    Set<Position> positions = new LinkedHashSet<>();
+    public int countIksovi = Main.length+Main.width-1;
 
     public CustomPositionSet() {
         positions.addAll(IntStream.range(1, Main.length).mapToObj(x -> new Position(x, 0, 'h')).toList());
         positions.addAll(IntStream.range(1, Main.width).mapToObj(x -> new Position(0, x, 'v')).toList());
+
+//        for (int i = 0; i<5; i++) {
+//            for (int j = 0; j<7; j++) {
+//                positions.add(new Position(i,j));
+//            }
+//        }
     }
 
     public char [][] tabla () {
         char [][] tabla = new char[Main.length][Main.width];
         positions.forEach(x -> tabla[x.x][x.y] = 'X');
         return tabla;
+    }
+
+    public int iksovi() {
+        int orelorel = 0;
+        char[][] mat = tabla();
+
+        for (int i = 0; i<Main.length; i++) {
+            for (int j = 0; j<Main.width; j++) {
+                if (mat[i][j] == 'X') orelorel++;
+            }
+        }
+
+        return orelorel;
     }
 
     public boolean add(Position position)
@@ -88,6 +108,7 @@ class CustomPositionSet {
             Position toRemove = new Position(0, position.y);
             toRemove.direction = 'v';
             positions.remove(toRemove);
+            countIksovi--;
         }
 
 
@@ -96,6 +117,7 @@ class CustomPositionSet {
             Position toRemove = new Position(position.x, 0);
             toRemove.direction = 'h';
             positions.remove(toRemove);
+            countIksovi--;
         }
 
 
@@ -105,6 +127,8 @@ class CustomPositionSet {
         {
             for(int j = 0; j < Main.width-1; j++)
             {
+               // if (i < 5 && j < 7) continue;
+
                 if(i == 0 && j == 0)
                 {
                     continue;
@@ -136,8 +160,7 @@ class CustomPositionSet {
         {
             if(tabla[position.x][position.y + 1] != 'X')
             {
-                position.direction = 'h';
-                positions.add(position);
+                countIksovi++;
             }
         }
         catch (Exception ex) {}
@@ -146,12 +169,17 @@ class CustomPositionSet {
         {
             if(tabla[position.x + 1][position.y] != 'X')
             {
-                Position pos = new Position(position.x, position.y);
-                pos.direction = 'v';
-                positions.add(pos);
+                countIksovi++;
             }
         }
         catch (Exception ex) {}
+
+        position.direction = 'h';
+        positions.add(position);
+
+        Position pos = new Position(position.x, position.y);
+        pos.direction = 'v';
+        positions.add(pos);
 
         return true;
     }
@@ -159,28 +187,74 @@ class CustomPositionSet {
 
 
 public class Main {
-    public static final int length = 14;
-    public static final int width = 13;
+    public static final int length = 20;
+    public static final int width = 11;
 
     public static void main(String[] args) throws FileNotFoundException {
+        SplittableRandom random = new SplittableRandom();
         while (true) {
             char[][] tabla = new char[length][width];
 
 
             CustomPositionSet customPositionSet = new CustomPositionSet();
-            Random random = new Random();
 
-            while (customPositionSet.positions.size() <= 80) {
-                customPositionSet.add(new Position(random.nextInt(1, length), random.nextInt(1, width)));
-            }
-            customPositionSet.positions.forEach(x -> tabla[x.x][x.y] = 'X');
+            int orli = customPositionSet.iksovi();
 
-            for (int i = 0; i < length; i++) {
-                for (int j = 0; j < width; j++) {
-                    System.out.print(tabla[i][j] + " ");
+//            for (int i = 1; i<width; i++) {
+//                int brojZborovi = random.nextInt(1,101);
+//                if (brojZborovi < 10) brojZborovi = 3;
+//                else if (brojZborovi < 30) brojZborovi = 4;
+//                else if (brojZborovi < 85) brojZborovi = 5;
+//                else brojZborovi = 6;
+//
+//                int oldIksovi = customPositionSet.iksovi();
+//
+//                while (customPositionSet.iksovi() - oldIksovi < brojZborovi-1) {
+//                    customPositionSet.add(new Position(random.nextInt(1,length), i));
+//                    random.nextInt(50);
+//                    random.nextInt(50);
+//                    random.nextInt(50);
+//                    random.nextInt(50);
+//                    random.nextInt(50);
+//                    random.nextInt(50);
+//                    random.nextInt(50);
+//                    random.nextInt(50);
+//                }
+//            }
+
+            List<String> moja = List.of(" XXXXXXXXXX",
+                    "X          ",
+                    "X          ",
+                    "X      X   ",
+                    "X    X     ",
+                    "X  X       ",
+                    "X   X      ",
+                    "X       X  ",
+                    "X X      X ",
+                    "XX        X",
+                    "X      X   ",
+                    "X    X     ",
+                    "X   X      ",
+                    "X X     X  ",
+                    "X  X       ",
+                    "X        X ",
+                    "X     X    ",
+                    "X      X   ",
+                    "X    X     ",
+                    "X          ");
+
+            for (int i = 0; i<moja.size(); i++) {
+                for (int j = 0; j<moja.get(0).length(); j++) {
+                    if (moja.get(i).charAt(j) == 'X') customPositionSet.positions.add(new Position(i,j));
                 }
-                System.out.println();
             }
+
+//            while (customPositionSet.countIksovi <= 100) {
+//                orli = customPositionSet.iksovi();
+//                customPositionSet.add(new Position(random.nextInt(1, length), random.nextInt(1, width)));
+//                tabla = customPositionSet.tabla();
+//            }
+            System.out.println(customPositionSet.countIksovi);
 
             BufferedReader br = new BufferedReader(new FileReader("recnik.csv"));
             List<String> zborovi = br.lines().map(x -> x.split(",")[1]).map(String::toLowerCase).filter(x ->
@@ -195,6 +269,7 @@ public class Main {
 
             String azbuka = "абвгдѓеѕжзијклљмнњопрстќуфхцчџш";
             int maxDolzina = zborovi.stream().mapToInt(String::length).max().orElse(0);
+            Map<Object, Long> dolzhina = zborovi.stream().collect(Collectors.groupingBy(x -> x.length(), Collectors.counting()));
             Map<Integer, Map<Character, Map<Integer, Set<String>>>> zboroviMapirani = new TreeMap<>();
             zborovi.stream().map(String::length).forEach(x -> zboroviMapirani.putIfAbsent(x, new TreeMap<>()));
             zboroviMapirani.values().stream().forEach(x -> {
@@ -220,6 +295,7 @@ public class Main {
 
             Map<Integer, Set<Position>> horizontalniZborovi = customPositionSet.positions.stream().filter(x -> x.direction == 'h').collect(Collectors.groupingBy(x -> x.x, TreeMap::new, Collectors.toCollection(TreeSet::new)));
             Map<Integer, Set<Position>> vertikalniZborovi = customPositionSet.positions.stream().filter(x -> x.direction == 'v').collect(Collectors.groupingBy(x -> x.y, TreeMap::new, Collectors.toCollection(TreeSet::new)));
+
 
             AtomicInteger prevCoordinate = new AtomicInteger();
             horizontalniZborovi.keySet().forEach(x -> {
@@ -255,11 +331,7 @@ public class Main {
                     prevCoordinate.set(p.y);
                 }
 
-                poziciiVoRed.forEach(pos -> {
-                            List<Position> intersecting = IntStream.range(pos.x + 1, pos.x + pos.length + 1)
-                                    .mapToObj(horizontalniZborovi::get).flatMap(Collection::stream).toList();
-                            System.out.println();
-                        });
+
 
                 poziciiVoRed.forEach(pos -> {
                     List<Position> intersecting = IntStream.range(pos.x + 1, pos.x + pos.length + 1)
@@ -271,7 +343,7 @@ public class Main {
                     pos.intersecting = intersecting.stream()
                             .collect(Collectors.toMap(intsct -> intsct.x - pos.x - 1, intsct -> new PositionIntersect(intsct, pos.y - intsct.y - 1)));
 
-                    System.out.println(pos);
+                   // System.out.println(pos);
                 });
             });
 
@@ -290,25 +362,30 @@ public class Main {
                 });
             });
 
-
-            System.out.println(zboroviMapirani.get(6).get('б').get(0));
-            System.out.println(zboroviMapirani.get(6).get('а').get(1));
-            Set<String> filtrirani = new HashSet<>(zboroviMapirani.get(6).get('б').get(0));
-            filtrirani.retainAll(zboroviMapirani.get(6).get('а').get(1));
 //        List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length != 0).toList();
             List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length >= 4).toList();
-            System.out.println(filtrirani);
-            Map<Position, List<String>> domain = listaPozicii.stream()
+
+            Map<Position, HashSet<String>> domain = listaPozicii.stream()
                     .collect(Collectors.toMap(
                             x -> x,
-                            x -> zboroviMapirani.getOrDefault(x.length, new HashMap<>()).values().stream().flatMap(val -> val.values().stream().flatMap(Collection::stream)).distinct().collect(Collectors.toList())));
+                            x -> (HashSet<String>) zboroviMapirani.getOrDefault(x.length, new HashMap<>()).values().stream().flatMap(val -> val.values().stream().flatMap(Collection::stream)).distinct().collect(Collectors.toSet())));
             CSP<Position, String> krstozbor = new CSP<>(listaPozicii, domain, zboroviMapirani);
             krstozbor.addConstraint(new WordLengthConstraint(listaPozicii));
             krstozbor.addConstraint(new AllDifferentConstraint(listaPozicii));
             krstozbor.addConstraint(new IntersectionConstraint(listaPozicii));
             Map<Position, String> resenie = krstozbor.backtrack(new TreeMap<>());
+            tabla = customPositionSet.tabla();
 
-            System.out.println(resenie);
+            for (int i = 0; i < length; i++) {
+                for (int j = 0; j < width; j++) {
+                    System.out.print(tabla[i][j]);
+                }
+                System.out.println();
+            }
+            if (resenie != null) {
+
+                System.out.println(resenie);
+            }
         }
     }
 }

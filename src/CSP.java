@@ -4,11 +4,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class CSP <T, U> {
     private List<T> variables;
-    private Map<T, List<U>> domains;
+    private Map<T, HashSet<U>> domains;
     private Map<T, List<Constraint<T, U>>> constraints;
     private  Map<Integer, Map<Character, Map<Integer, Set<String>>>> zboroviMapirani;
 
-    public CSP(List<T> variables, Map<T, List<U>> domains,  Map<Integer, Map<Character, Map<Integer, Set<String>>>> zboroviMapirani) {
+    public CSP(List<T> variables, Map<T, HashSet<U>> domains,  Map<Integer, Map<Character, Map<Integer, Set<String>>>> zboroviMapirani) {
         this.variables = variables;
         this.domains = domains;
         constraints = new HashMap<>();
@@ -37,13 +37,14 @@ public class CSP <T, U> {
 
         T var = variables.stream().filter(x -> !solution.containsKey(x)).sorted(Comparator.comparingInt(x -> domains.get(x).size()).thenComparing(x -> -((Position) x).intersecting.values().stream().filter(y -> y.position.length >= 4).count())).findFirst().get();
 //        T var = variables.stream().filter(x -> !solution.containsKey(x)).sorted(Comparator.comparingInt(x -> -((Position) x).intersecting.size())).findFirst().get();
-//        List<U> shuffled =  new ArrayList<>(domains.get(var));
-//        Collections.shuffle(shuffled);
-        for(U dom : domains.get(var))
+        List<U> shuffled =  new ArrayList<>(domains.get(var));
+        Collections.shuffle(shuffled);
+
+        for(U dom : shuffled)
         {
             Map<T, U> temp = new HashMap<>(solution);
             temp.put(var, dom);
-            Map<T, List<U>> domainsBckp = new HashMap<>(domains);
+            Map<T, HashSet<U>> domainsBckp = new HashMap<>(domains);
             if(solutionValid(var, temp))
             {
 
@@ -76,8 +77,8 @@ public class CSP <T, U> {
                         if(!temp.containsKey(var2))
                         {
 //                            List<U> nd = (List<U>) new ArrayList<>(newDomain);
-                            domains.put((T) var2, (List<U>) new ArrayList<>(newDomain));
-                            if(domains.values().stream().anyMatch(List::isEmpty))
+                            domains.get(var2).retainAll(newDomain);
+                            if(domains.values().stream().anyMatch(Set::isEmpty))
                             {
                                 domains = domainsBckp;
                                 return null;
