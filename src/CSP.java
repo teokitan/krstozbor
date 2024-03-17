@@ -1,8 +1,6 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 public class CSP <T, U> {
     private List<T> variables;
@@ -36,8 +34,9 @@ public class CSP <T, U> {
         }
 
         T var = variables.stream().filter(x -> !solution.containsKey(x)).findFirst().get();
-
-        for(U dom : domains.get(var))
+        List<U> domain = new ArrayList<>(domains.get(var).stream().toList());
+        Collections.shuffle(domain);
+        for(U dom : domain)
         {
             Map<T, U> temp = new HashMap<>(solution);
             temp.put(var, dom);

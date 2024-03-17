@@ -8,7 +8,7 @@ public class IntersectionConstraint extends Constraint<Position, String> {
 
     @Override
     public boolean checkConstraint(Map<Position, String> solution) {
-        for (Position variable : variables) {
+        for (Position variable : solution.keySet()) {
             String sol =  solution.get(variable);
             if(sol == null)
             {

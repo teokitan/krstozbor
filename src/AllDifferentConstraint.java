@@ -10,7 +10,7 @@ public class AllDifferentConstraint extends Constraint<Position, String>{
 
     @Override
     public boolean checkConstraint(Map<Position, String> solution) {
-        Set<String> checkSet = new HashSet<>(solution.values().stream().filter(x -> x.length() > 1).toList());
-        return checkSet.size() == solution.values().stream().filter(x -> x.length() > 1).count();
+        Set<String> checkSet = new HashSet<>(solution.values().stream().filter(x -> x.length() > 2).toList());
+        return checkSet.size() == solution.values().stream().filter(x -> x.length() > 2).count();
     }
 }
