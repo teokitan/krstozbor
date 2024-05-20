@@ -1,6 +1,9 @@
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.temporal.Temporal;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -43,8 +46,7 @@ class Position implements Comparable<Position> {
 
     @Override
     public int compareTo(Position o) {
-        if(this.x - o.x == 0)
-        {
+        if (this.x - o.x == 0) {
             return this.y - o.y;
         }
         return this.x - o.x;
@@ -63,7 +65,7 @@ class Position implements Comparable<Position> {
 
 class CustomPositionSet {
     Set<Position> positions = new LinkedHashSet<>();
-    public int countIksovi = Main.length+Main.width-1;
+    public int countIksovi = Main.length + Main.width - 1;
 
     public CustomPositionSet() {
         positions.addAll(IntStream.range(1, Main.length).mapToObj(x -> new Position(x, 0, 'h')).toList());
@@ -76,8 +78,8 @@ class CustomPositionSet {
 //        }
     }
 
-    public char [][] tabla () {
-        char [][] tabla = new char[Main.length][Main.width];
+    public char[][] tabla() {
+        char[][] tabla = new char[Main.length][Main.width];
         positions.forEach(x -> tabla[x.x][x.y] = 'X');
         return tabla;
     }
@@ -86,8 +88,8 @@ class CustomPositionSet {
         int orelorel = 0;
         char[][] mat = tabla();
 
-        for (int i = 0; i<Main.length; i++) {
-            for (int j = 0; j<Main.width; j++) {
+        for (int i = 0; i < Main.length; i++) {
+            for (int j = 0; j < Main.width; j++) {
                 if (mat[i][j] == 'X') orelorel++;
             }
         }
@@ -95,16 +97,13 @@ class CustomPositionSet {
         return orelorel;
     }
 
-    public boolean add(Position position)
-    {
+    public boolean add(Position position) {
 
-        if(position.x == Main.length-1 && position.y == Main.width-1)
-        {
+        if (position.x == Main.length - 1 && position.y == Main.width - 1) {
             return false;
         }
 
-        if(position.x == 1)
-        {
+        if (position.x == 1) {
             Position toRemove = new Position(0, position.y);
             toRemove.direction = 'v';
             positions.remove(toRemove);
@@ -112,8 +111,7 @@ class CustomPositionSet {
         }
 
 
-        if(position.y == 1)
-        {
+        if (position.y == 1) {
             Position toRemove = new Position(position.x, 0);
             toRemove.direction = 'h';
             positions.remove(toRemove);
@@ -121,58 +119,46 @@ class CustomPositionSet {
         }
 
 
-        char [][] tabla = tabla();
+        char[][] tabla = tabla();
         tabla[position.x][position.y] = 'X';
-        for(int i = 0; i < Main.length-1; i++)
-        {
-            for(int j = 0; j < Main.width-1; j++)
-            {
-               // if (i < 5 && j < 7) continue;
+        for (int i = 0; i < Main.length - 1; i++) {
+            for (int j = 0; j < Main.width - 1; j++) {
+                // if (i < 5 && j < 7) continue;
 
-                if(i == 0 && j == 0)
-                {
+                if (i == 0 && j == 0) {
                     continue;
                 }
-                if(tabla[i][j] == 'X' && (tabla[i][j + 1] == 'X' && tabla[i + 1][j] == 'X'))
-                {
+                if (tabla[i][j] == 'X' && (tabla[i][j + 1] == 'X' && tabla[i + 1][j] == 'X')) {
                     return false;
                 }
             }
         }
 
-        for(int i = 0; i < Main.length-1; i++)
-        {
-            if(tabla[i][Main.width-1] == 'X' && tabla[i + 1][Main.width-1] == 'X')
-            {
+        for (int i = 0; i < Main.length - 1; i++) {
+            if (tabla[i][Main.width - 1] == 'X' && tabla[i + 1][Main.width - 1] == 'X') {
                 return false;
             }
         }
 
-        for(int i = 0; i < Main.width-1; i++)
-        {
-            if(tabla[Main.length-1][i] == 'X' && tabla[Main.length-1][i + 1] == 'X')
-            {
+        for (int i = 0; i < Main.width - 1; i++) {
+            if (tabla[Main.length - 1][i] == 'X' && tabla[Main.length - 1][i + 1] == 'X') {
                 return false;
             }
         }
 
-        try
-        {
-            if(tabla[position.x][position.y + 1] != 'X')
-            {
+        try {
+            if (tabla[position.x][position.y + 1] != 'X') {
                 countIksovi++;
             }
+        } catch (Exception ex) {
         }
-        catch (Exception ex) {}
 
-        try
-        {
-            if(tabla[position.x + 1][position.y] != 'X')
-            {
+        try {
+            if (tabla[position.x + 1][position.y] != 'X') {
                 countIksovi++;
             }
+        } catch (Exception ex) {
         }
-        catch (Exception ex) {}
 
         position.direction = 'h';
         positions.add(position);
@@ -187,205 +173,163 @@ class CustomPositionSet {
 
 
 public class Main {
-    public static final int length = 20;
-    public static final int width = 11;
+    public static final int length = 15;
+    public static final int width = 15;
+    public static final int wordCount = 50;
 
     public static void main(String[] args) throws FileNotFoundException {
         SplittableRandom random = new SplittableRandom();
-        while (true) {
-            char[][] tabla = new char[length][width];
 
-
-            CustomPositionSet customPositionSet = new CustomPositionSet();
-
-            int orli = customPositionSet.iksovi();
-
-//            for (int i = 1; i<width; i++) {
-//                int brojZborovi = random.nextInt(1,101);
-//                if (brojZborovi < 10) brojZborovi = 3;
-//                else if (brojZborovi < 30) brojZborovi = 4;
-//                else if (brojZborovi < 85) brojZborovi = 5;
-//                else brojZborovi = 6;
-//
-//                int oldIksovi = customPositionSet.iksovi();
-//
-//                while (customPositionSet.iksovi() - oldIksovi < brojZborovi-1) {
-//                    customPositionSet.add(new Position(random.nextInt(1,length), i));
-//                    random.nextInt(50);
-//                    random.nextInt(50);
-//                    random.nextInt(50);
-//                    random.nextInt(50);
-//                    random.nextInt(50);
-//                    random.nextInt(50);
-//                    random.nextInt(50);
-//                    random.nextInt(50);
-//                }
-//            }
-
-            List<String> moja = List.of(" XXXXXXXXXX",
-                    "X          ",
-                    "X          ",
-                    "X      X   ",
-                    "X    X     ",
-                    "X  X       ",
-                    "X   X      ",
-                    "X       X  ",
-                    "X X      X ",
-                    "XX        X",
-                    "X      X   ",
-                    "X    X     ",
-                    "X   X      ",
-                    "X X     X  ",
-                    "X  X       ",
-                    "X        X ",
-                    "X     X    ",
-                    "X      X   ",
-                    "X    X     ",
-                    "X          ");
-
-            for (int i = 0; i<moja.size(); i++) {
-                for (int j = 0; j<moja.get(0).length(); j++) {
-                    if (moja.get(i).charAt(j) == 'X') customPositionSet.positions.add(new Position(i,j));
+        BufferedReader br = new BufferedReader(new FileReader("recnik.csv"));
+        List<String> zborovi = br.lines().map(x -> x.split(",")[1]).map(String::toLowerCase).filter(x ->
+        {
+            for (int i = 0; i < x.length(); i++) {
+                if (!Character.isLetter(x.charAt(i))) {
+                    return false;
                 }
             }
+            return true;
+        }).toList();
 
-//            while (customPositionSet.countIksovi <= 100) {
-//                orli = customPositionSet.iksovi();
-//                customPositionSet.add(new Position(random.nextInt(1, length), random.nextInt(1, width)));
-//                tabla = customPositionSet.tabla();
-//            }
-            System.out.println(customPositionSet.countIksovi);
 
-            BufferedReader br = new BufferedReader(new FileReader("recnik.csv"));
-            List<String> zborovi = br.lines().map(x -> x.split(",")[1]).map(String::toLowerCase).filter(x ->
-            {
-                for (int i = 0; i < x.length(); i++) {
-                    if (!Character.isLetter(x.charAt(i))) {
-                        return false;
+        String azbuka = "абвгдѓеѕжзијклљмнњопрстќуфхцчџш";
+//            String azbuka = "abcdefghijklmnopqrstuvwxyz";
+        int maxDolzina = zborovi.stream().mapToInt(String::length).max().orElse(0);
+        Map<Object, Long> dolzhina = zborovi.stream().collect(Collectors.groupingBy(x -> x.length(), Collectors.counting()));
+        Map<Integer, Map<Character, Map<Integer, Set<String>>>> zboroviMapirani = new TreeMap<>();
+        zborovi.stream().map(String::length).forEach(x -> zboroviMapirani.putIfAbsent(x, new TreeMap<>()));
+        zboroviMapirani.values().stream().forEach(x -> {
+            azbuka.chars().mapToObj(y -> (char) y).forEach(y -> x.putIfAbsent(y, new TreeMap<>()));
+        });
+        zboroviMapirani.values().stream().flatMap(x -> x.values().stream()).forEach(x -> {
+            IntStream.range(0, maxDolzina).forEach(y -> x.putIfAbsent(y, new TreeSet<>()));
+        });
+
+        zboroviMapirani.entrySet().forEach(x -> {
+            Set<String> filterZborovi = zborovi.stream().filter(zbor -> zbor.length() == x.getKey()).collect(Collectors.toSet());
+            x.getValue().entrySet().forEach(y -> {
+                Set<String> filterFilterZborovi = filterZborovi.stream().filter(z -> z.contains(String.valueOf(y.getKey()))).collect(Collectors.toSet());
+                y.getValue().entrySet().forEach(p -> p.setValue(filterFilterZborovi.stream().filter(zbor ->
+                {
+                    if (zbor.length() > p.getKey()) {
+                        return zbor.charAt(p.getKey()) == y.getKey();
                     }
+                    return false;
+                }).collect(Collectors.toSet())).addAll(p.getValue()));
+            });
+        });
+
+        for (int ii = 0; ii <= 10; ii++) {
+            LocalDateTime startTime = LocalDateTime.now();
+            while (true) {
+                char[][] tabla = new char[length][width];
+
+
+                CustomPositionSet customPositionSet = new CustomPositionSet();
+
+                while (customPositionSet.countIksovi <= wordCount) {
+                    customPositionSet.add(new Position(random.nextInt(1, length), random.nextInt(1, width)));
                 }
-                return true;
-            }).toList();
+//                System.out.println(customPositionSet.countIksovi);
 
-            String azbuka = "абвгдѓеѕжзијклљмнњопрстќуфхцчџш";
-            int maxDolzina = zborovi.stream().mapToInt(String::length).max().orElse(0);
-            Map<Object, Long> dolzhina = zborovi.stream().collect(Collectors.groupingBy(x -> x.length(), Collectors.counting()));
-            Map<Integer, Map<Character, Map<Integer, Set<String>>>> zboroviMapirani = new TreeMap<>();
-            zborovi.stream().map(String::length).forEach(x -> zboroviMapirani.putIfAbsent(x, new TreeMap<>()));
-            zboroviMapirani.values().stream().forEach(x -> {
-                azbuka.chars().mapToObj(y -> (char) y).forEach(y -> x.putIfAbsent(y, new TreeMap<>()));
-            });
-            zboroviMapirani.values().stream().flatMap(x -> x.values().stream()).forEach(x -> {
-                IntStream.range(0, maxDolzina).forEach(y -> x.putIfAbsent(y, new TreeSet<>()));
-            });
+                Map<Integer, Set<Position>> horizontalniZborovi = customPositionSet.positions.stream().filter(x -> x.direction == 'h').collect(Collectors.groupingBy(x -> x.x, TreeMap::new, Collectors.toCollection(TreeSet::new)));
+                Map<Integer, Set<Position>> vertikalniZborovi = customPositionSet.positions.stream().filter(x -> x.direction == 'v').collect(Collectors.groupingBy(x -> x.y, TreeMap::new, Collectors.toCollection(TreeSet::new)));
 
-            zboroviMapirani.entrySet().forEach(x -> {
-                Set<String> filterZborovi = zborovi.stream().filter(zbor -> zbor.length() == x.getKey()).collect(Collectors.toSet());
-                x.getValue().entrySet().forEach(y -> {
-                    Set<String> filterFilterZborovi = filterZborovi.stream().filter(z -> z.contains(String.valueOf(y.getKey()))).collect(Collectors.toSet());
-                    y.getValue().entrySet().forEach(p -> p.setValue(filterFilterZborovi.stream().filter(zbor ->
+
+                AtomicInteger prevCoordinate = new AtomicInteger();
+                horizontalniZborovi.keySet().forEach(x -> {
+                    List<Position> poziciiVoRed = horizontalniZborovi.get(x).stream().toList();
+                    prevCoordinate.set(poziciiVoRed.get(0).y);
+                    for (int i = 1; i < poziciiVoRed.size(); i++) {
+                        Position p = poziciiVoRed.get(i - 1);
+                        Position p1 = poziciiVoRed.get(i);
+                        p.length = p1.y - p.y - 1;
+                        prevCoordinate.set(p.y);
+                    }
                     {
-                        if (zbor.length() > p.getKey()) {
-                            return zbor.charAt(p.getKey()) == y.getKey();
-                        }
-                        return false;
-                    }).collect(Collectors.toSet())).addAll(p.getValue()));
+                        Position p = poziciiVoRed.get(poziciiVoRed.size() - 1);
+                        p.length = width - 1 - p.y;
+                        prevCoordinate.set(p.y);
+                    }
                 });
-            });
 
-            Map<Integer, Set<Position>> horizontalniZborovi = customPositionSet.positions.stream().filter(x -> x.direction == 'h').collect(Collectors.groupingBy(x -> x.x, TreeMap::new, Collectors.toCollection(TreeSet::new)));
-            Map<Integer, Set<Position>> vertikalniZborovi = customPositionSet.positions.stream().filter(x -> x.direction == 'v').collect(Collectors.groupingBy(x -> x.y, TreeMap::new, Collectors.toCollection(TreeSet::new)));
-
-
-            AtomicInteger prevCoordinate = new AtomicInteger();
-            horizontalniZborovi.keySet().forEach(x -> {
-                List<Position> poziciiVoRed = horizontalniZborovi.get(x).stream().toList();
-                prevCoordinate.set(poziciiVoRed.get(0).y);
-                for (int i = 1; i < poziciiVoRed.size(); i++) {
-                    Position p = poziciiVoRed.get(i - 1);
-                    Position p1 = poziciiVoRed.get(i);
-                    p.length = p1.y - p.y - 1;
-                    prevCoordinate.set(p.y);
-                }
-                {
-                    Position p = poziciiVoRed.get(poziciiVoRed.size() - 1);
-                    p.length = width - 1 - p.y;
-                    prevCoordinate.set(p.y);
-                }
-            });
-
-            vertikalniZborovi.keySet().forEach(x -> {
-                List<Position> poziciiVoRed = vertikalniZborovi.get(x).stream().toList();
-                Iterator<Position> iter = poziciiVoRed.iterator();
-                prevCoordinate.set(x);
-                Boolean newPos = false;
-                for (int i = 1; i < poziciiVoRed.size(); i++) {
-                    Position p = poziciiVoRed.get(i - 1);
-                    Position p1 = poziciiVoRed.get(i);
-                    p.length = p1.x - p.x - 1;
-                    prevCoordinate.set(p.x);
-                }
-                {
-                    Position p = poziciiVoRed.get(poziciiVoRed.size() - 1);
-                    p.length = length - 1 - p.x;
-                    prevCoordinate.set(p.y);
-                }
+                vertikalniZborovi.keySet().forEach(x -> {
+                    List<Position> poziciiVoRed = vertikalniZborovi.get(x).stream().toList();
+                    Iterator<Position> iter = poziciiVoRed.iterator();
+                    prevCoordinate.set(x);
+                    Boolean newPos = false;
+                    for (int i = 1; i < poziciiVoRed.size(); i++) {
+                        Position p = poziciiVoRed.get(i - 1);
+                        Position p1 = poziciiVoRed.get(i);
+                        p.length = p1.x - p.x - 1;
+                        prevCoordinate.set(p.x);
+                    }
+                    {
+                        Position p = poziciiVoRed.getLast();
+                        p.length = length - 1 - p.x;
+                        prevCoordinate.set(p.y);
+                    }
 
 
+                    poziciiVoRed.forEach(pos -> {
+                        List<Position> intersecting = IntStream.range(pos.x + 1, pos.x + pos.length + 1)
+                                .mapToObj(horizontalniZborovi::get)
+                                .flatMap(Collection::stream)
+                                .filter(w -> w.y < pos.y && w.length + w.y >= pos.y)
+                                .toList();
 
-                poziciiVoRed.forEach(pos -> {
-                    List<Position> intersecting = IntStream.range(pos.x + 1, pos.x + pos.length + 1)
-                            .mapToObj(horizontalniZborovi::get)
-                            .flatMap(Collection::stream)
-                            .filter(w -> w.y < pos.y && w.length + w.y >= pos.y)
-                            .toList();
+                        pos.intersecting = intersecting.stream()
+                                .collect(Collectors.toMap(intsct -> intsct.x - pos.x - 1, intsct -> new PositionIntersect(intsct, pos.y - intsct.y - 1)));
 
-                    pos.intersecting = intersecting.stream()
-                            .collect(Collectors.toMap(intsct -> intsct.x - pos.x - 1, intsct -> new PositionIntersect(intsct, pos.y - intsct.y - 1)));
-
-                   // System.out.println(pos);
+                        // System.out.println(pos);
+                    });
                 });
-            });
 
-            horizontalniZborovi.keySet().forEach(x -> {
-                List<Position> poziciiVoRed = horizontalniZborovi.get(x).stream().toList();
+                horizontalniZborovi.keySet().forEach(x -> {
+                    List<Position> poziciiVoRed = horizontalniZborovi.get(x).stream().toList();
 
-                poziciiVoRed.forEach(pos -> {
-                    List<Position> intersecting = IntStream.range(pos.y + 1, pos.y + pos.length + 1)
-                            .mapToObj(vertikalniZborovi::get)
-                            .flatMap(Collection::stream)
-                            .filter(w -> w.x < pos.x && w.length + w.x >= pos.x)
-                            .toList();
+                    poziciiVoRed.forEach(pos -> {
+                        List<Position> intersecting = IntStream.range(pos.y + 1, pos.y + pos.length + 1)
+                                .mapToObj(vertikalniZborovi::get)
+                                .flatMap(Collection::stream)
+                                .filter(w -> w.x < pos.x && w.length + w.x >= pos.x)
+                                .toList();
 
-                    pos.intersecting = intersecting.stream()
-                            .collect(Collectors.toMap(intsct -> intsct.y - pos.y - 1, intsct -> new PositionIntersect(intsct, pos.x - intsct.x - 1)));
+                        pos.intersecting = intersecting.stream()
+                                .collect(Collectors.toMap(intsct -> intsct.y - pos.y - 1, intsct -> new PositionIntersect(intsct, pos.x - intsct.x - 1)));
+                    });
                 });
-            });
 
 //        List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length != 0).toList();
-            List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length >= 4).toList();
+                List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length >= 4).toList();
 
-            Map<Position, HashSet<String>> domain = listaPozicii.stream()
-                    .collect(Collectors.toMap(
-                            x -> x,
-                            x -> (HashSet<String>) zboroviMapirani.getOrDefault(x.length, new HashMap<>()).values().stream().flatMap(val -> val.values().stream().flatMap(Collection::stream)).distinct().collect(Collectors.toSet())));
-            CSP<Position, String> krstozbor = new CSP<>(listaPozicii, domain, zboroviMapirani);
-            krstozbor.addConstraint(new WordLengthConstraint(listaPozicii));
-            krstozbor.addConstraint(new AllDifferentConstraint(listaPozicii));
-            krstozbor.addConstraint(new IntersectionConstraint(listaPozicii));
-            Map<Position, String> resenie = krstozbor.backtrack(new TreeMap<>());
-            tabla = customPositionSet.tabla();
+                Map<Position, HashSet<String>> domain = listaPozicii.stream()
+                        .collect(Collectors.toMap(
+                                x -> x,
+                                x -> (HashSet<String>) zboroviMapirani.getOrDefault(x.length, new HashMap<>()).values().stream().flatMap(val -> val.values().stream().flatMap(Collection::stream)).distinct().collect(Collectors.toSet())));
+                CSP krstozbor = new CSP(listaPozicii, domain, zboroviMapirani);
+                krstozbor.addConstraint(new WordLengthConstraint(listaPozicii));
+                krstozbor.addConstraint(new AllDifferentConstraint(listaPozicii));
+                krstozbor.addConstraint(new IntersectionConstraint(listaPozicii));
+                Map<Position, String> resenie = krstozbor.backtrack(new TreeMap<>());
+                tabla = customPositionSet.tabla();
 
-            for (int i = 0; i < length; i++) {
-                for (int j = 0; j < width; j++) {
-                    System.out.print(tabla[i][j]);
+
+                if (resenie != null) {
+                    for (int i = 0; i < length; i++) {
+                        for (int j = 0; j < width; j++) {
+                            System.out.print(tabla[i][j]);
+                        }
+                        System.out.println();
+                    }
+                    System.out.println(resenie);
+                    break;
                 }
-                System.out.println();
             }
-            if (resenie != null) {
-
-                System.out.println(resenie);
-            }
+            LocalDateTime endTime = LocalDateTime.now();
+            Duration duration = Duration.between(startTime, endTime);
+            long milliseconds = duration.toMillis();
+//            System.out.println("Milisekudni: " + milliseconds);
         }
     }
 }
