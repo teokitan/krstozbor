@@ -61,6 +61,10 @@ class Position implements Comparable<Position> {
                 ", direction=" + direction +
                 '}';
     }
+
+    public Position copy() {
+        return new Position(this.x, this.y, this.direction);
+    }
 }
 
 class CustomPositionSet {
@@ -175,7 +179,7 @@ class CustomPositionSet {
 public class Main {
     public static final int length = 15;
     public static final int width = 15;
-    public static final int wordCount = 50;
+    public static final int wordCount = 80;
 
     public static void main(String[] args) throws FileNotFoundException {
         SplittableRandom random = new SplittableRandom();
@@ -302,6 +306,7 @@ public class Main {
 
 //        List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length != 0).toList();
                 List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length >= 4).toList();
+//                List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length != 0).toList();
 
                 Map<Position, HashSet<String>> domain = listaPozicii.stream()
                         .collect(Collectors.toMap(
@@ -311,6 +316,8 @@ public class Main {
                 krstozbor.addConstraint(new WordLengthConstraint(listaPozicii));
                 krstozbor.addConstraint(new AllDifferentConstraint(listaPozicii));
                 krstozbor.addConstraint(new IntersectionConstraint(listaPozicii));
+                char[][] orelorel = customPositionSet.tabla();
+
                 Map<Position, String> resenie = krstozbor.backtrack(new TreeMap<>());
                 tabla = customPositionSet.tabla();
 

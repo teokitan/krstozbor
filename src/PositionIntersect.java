@@ -6,4 +6,5 @@ public class PositionIntersect {
         this.position = position;
         this.point = point;
     }
+
 }
