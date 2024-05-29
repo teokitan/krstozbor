@@ -51,7 +51,7 @@ public class CSP {
 
     public Map<Position, String> backtrack (Map<Position, String> solution)
     {
-        if(solution.keySet().stream().filter(x -> x.length >= 4).count() == variables.size())
+        if(solution.size() == variables.stream().filter(x -> x.length >= 4).count())
         {
             return solution;
         }
@@ -121,6 +121,15 @@ public class CSP {
                                         p.length = var2.length - x - 1;
                                         var2.intersecting.entrySet().stream().filter(stara -> stara.getKey() > x).forEach(orel -> p.intersecting.put(orel.getKey(), orel.getValue()));
                                         List<Position> newVariables =  variables.stream().map(Position::copy).collect(Collectors.toCollection(ArrayList::new));
+                                        newVariables.forEach(presek -> {
+                                            Map<Integer, PositionIntersect> preseci = presek.intersecting;
+                                            presek.intersecting = new HashMap<>();
+                                            preseci.forEach((key, value) -> {
+                                                Position intersectingPosition = value.position;
+                                                Position newIntersectingPosition = newVariables.stream().filter(news -> news.x == intersectingPosition.x && news.y == intersectingPosition.y).findFirst().get();
+                                                presek.intersecting.put(key, new PositionIntersect(newIntersectingPosition, value.point));
+                                            });
+                                        });
                                         newVariables.add(p);
                                         newVariables.stream().filter(stara -> stara.equals(var2)).findFirst().get().length = x;
                                         newVariables.stream().filter(stara -> stara.equals(var2)).findFirst().get().intersecting = newVariables.stream().filter(stara -> stara.equals(var2)).findFirst().get().intersecting.entrySet().stream().filter(orel -> orel.getKey() < x).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));;
@@ -182,10 +191,10 @@ public class CSP {
                                         krstozbor.addConstraint(new WordLengthConstraint(newVariables));
                                         krstozbor.addConstraint(new AllDifferentConstraint(newVariables));
                                         krstozbor.addConstraint(new IntersectionConstraint(newVariables));
-                                        //System.out.println(this);
-                                        //System.out.println("===============");
-                                        //System.out.println(krstozbor);
-                                        //System.out.println("^^^^^^^^^^");
+                                        System.out.println(this);
+                                        System.out.println("===============");
+                                        System.out.println(krstozbor);
+                                        System.out.println("^^^^^^^^^^");
                                         Map<Position, String> resenie = krstozbor.backtrack(temp);
 
                                         if (resenie != null) {
@@ -193,7 +202,9 @@ public class CSP {
                                             System.out.println("TEMP RESHENIE");
                                             System.out.println("TEMP RESHENIE");
                                             System.out.println("TEMP RESHENIE");
+                                            System.out.println(krstozbor);
                                             System.out.println("TEMP RESHENIE");
+                                            System.out.println(resenie);
                                         }
                                     });
                                  }
