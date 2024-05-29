@@ -25,7 +25,9 @@ public class CSP {
         variables.forEach(orel -> mat[orel.x][orel.y] = 'X');
 
         StringBuilder sb = new StringBuilder();
+        sb.append("  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4\n");
         for (int i = 0; i < mat.length; i++) {
+            sb.append("" + i + " ");
             for (int j = 0; j < mat[i].length; j++) {
                 if (mat[i][j] == 'X') {
                     sb.append(mat[i][j] + " ");
@@ -157,7 +159,7 @@ public class CSP {
                                         Position intersectingWord = var2.intersecting.get(x).position;
 //                                        Position p2 = new Position(intersectingWord.x + var2.intersecting.get(x - 1).point, intersectingWord.y, 'h');
                                         Position p2 = new Position(var2.x + x + 1, var2.y, 'h');
-                                        p2.length = intersectingWord.length - var2.intersecting.get(x - 1).point - 1;
+                                        p2.length = intersectingWord.length - var2.intersecting.get(x).point - 1;
                                         intersectingWord.intersecting.entrySet().stream().filter(stara -> stara.getKey() > var2.intersecting.get(x).point).forEach(orel -> p2.intersecting.put(orel.getKey(), orel.getValue()));
                                         newVariables.add(p2);
                                         newVariables.stream().filter(stara -> stara.equals(intersectingWord)).findFirst().get().length = var2.intersecting.get(x).point;
@@ -223,6 +225,7 @@ public class CSP {
                             }
                         }
                     }
+
                     catch (Exception ex)
                     {
                         domains = domainsBckp;

@@ -31,6 +31,14 @@ class Position implements Comparable<Position> {
         this.intersecting = new HashMap<>();
     }
 
+    public Position(int x, int y, int length, char direction) {
+        this.x = x;
+        this.y = y;
+        this.direction = direction;
+        this.length = length;
+        this.intersecting = new HashMap<>();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -63,7 +71,7 @@ class Position implements Comparable<Position> {
     }
 
     public Position copy() {
-        return new Position(this.x, this.y, this.direction);
+        return new Position(this.x, this.y, this.length, this.direction);
     }
 }
 
@@ -179,7 +187,7 @@ class CustomPositionSet {
 public class Main {
     public static final int length = 15;
     public static final int width = 15;
-    public static final int wordCount = 80;
+    public static final int wordCount = 100;
 
     public static void main(String[] args) throws FileNotFoundException {
         SplittableRandom random = new SplittableRandom();
