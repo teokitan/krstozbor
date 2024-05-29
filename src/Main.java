@@ -187,7 +187,7 @@ class CustomPositionSet {
 public class Main {
     public static final int length = 15;
     public static final int width = 15;
-    public static final int wordCount = 100;
+    public static final int wordCount = 60;
 
     public static void main(String[] args) throws FileNotFoundException {
         SplittableRandom random = new SplittableRandom();
@@ -313,8 +313,8 @@ public class Main {
                 });
 
 //        List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length != 0).toList();
-                List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length >= 4).toList();
-//                List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length != 0).toList();
+//                List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length >= 4).toList();
+                List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length != 0).toList();
 
                 Map<Position, HashSet<String>> domain = listaPozicii.stream()
                         .collect(Collectors.toMap(

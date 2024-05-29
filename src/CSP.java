@@ -27,7 +27,7 @@ public class CSP {
         StringBuilder sb = new StringBuilder();
         sb.append("  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4\n");
         for (int i = 0; i < mat.length; i++) {
-            sb.append("" + i + " ");
+            sb.append("" + (i % 10) + " ");
             for (int j = 0; j < mat[i].length; j++) {
                 if (mat[i][j] == 'X') {
                     sb.append(mat[i][j] + " ");
@@ -103,7 +103,8 @@ public class CSP {
                         {
 //                            List<String> nd = (List<String>) new ArrayList<>(newDomain);
                             domains.get(var2).retainAll(newDomain);
-                            if(domains.values().stream().anyMatch(Set::isEmpty))
+                     //       if(domains.values().stream().anyMatch(Set::isEmpty))
+                            if (domains.get(var2).isEmpty())
                             {
 //                                domains = domainsBckp;
                                 List<Integer> emptyPositions;
@@ -171,7 +172,11 @@ public class CSP {
                                                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
                                         novDomain.put(p2, zboroviMapirani.get(p2.length).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
-                                        novDomain.put(intersectingWord, zboroviMapirani.get(var2.intersecting.get(x).point).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
+                                        if (var2.intersecting.get(x).point != 0) {
+                                            novDomain.put(intersectingWord, zboroviMapirani.get(var2.intersecting.get(x).point).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
+                                        } else {
+                                            novDomain.put(intersectingWord, new HashSet<String>());
+                                        }
 
                                         i.set(p2.x);
                                         int start = var2.intersecting.get(x).point;
@@ -209,23 +214,27 @@ public class CSP {
                                             System.out.println(resenie);
                                         }
                                     });
-                                 }
+                                }
                                 else
                                 {
                                     emptyPositions = var2.intersecting.entrySet().stream().filter(x -> x.getKey() > 0 && x.getKey() < var2.length - 1 && !temp.containsKey(x.getValue().position)).map(x -> x.getKey()).sorted((x1, x2) -> {
                                         int distanceToMiddle = Math.abs(var2.x - var2.length) / 2;
                                         return Integer.compare(Math.abs(x1 - distanceToMiddle), Math.abs(x2 - distanceToMiddle));
                                     }).toList();
+
+                                    domains = domainsBckp;
+                                    return null;
                                 }
 
-
-
-
+                                return null;
+                            }
+                            else if(domains.values().stream().anyMatch(Set::isEmpty))
+                            {
+                                domains = domainsBckp;
                                 return null;
                             }
                         }
                     }
-
                     catch (Exception ex)
                     {
                         domains = domainsBckp;
