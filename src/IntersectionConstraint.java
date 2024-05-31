@@ -24,6 +24,15 @@ public class IntersectionConstraint extends Constraint<Position, String> {
                 }
                 int pos1 = var.getKey();
                 int pos2 = var.getValue().point;
+
+                if (pos1 >= sol.length()) {
+                    System.out.println();
+                }
+
+                if (pos2 >= solution.get(var.getValue().position).length()) {
+                    System.out.println();
+                }
+
                 return sol.charAt(pos1) == solution.get(var.getValue().position).charAt(pos2);
             }))
             {

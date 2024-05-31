@@ -185,9 +185,9 @@ class CustomPositionSet {
 
 
 public class Main {
-    public static final int length = 15;
-    public static final int width = 15;
-    public static final int wordCount = 60;
+    public static final int length = 20;
+    public static final int width = 20;
+    public static final int wordCount = 100;
 
     public static void main(String[] args) throws FileNotFoundException {
         SplittableRandom random = new SplittableRandom();
@@ -339,7 +339,7 @@ public class Main {
                     }
                     System.out.println(resenie);
                     break;
-                }
+                } else System.out.println("nema");
             }
             LocalDateTime endTime = LocalDateTime.now();
             Duration duration = Duration.between(startTime, endTime);
