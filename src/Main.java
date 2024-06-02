@@ -3,7 +3,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.Temporal;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -110,8 +109,7 @@ class CustomPositionSet {
     }
 
     public boolean add(Position position) {
-
-        if (position.x == Main.length - 1 && position.y == Main.width - 1) {
+        if (positions.contains(position))  {
             return false;
         }
 
@@ -185,26 +183,48 @@ class CustomPositionSet {
 
 
 public class Main {
-    public static final int length = 20;
-    public static final int width = 20;
-    public static final int wordCount = 100;
+    public static final int length = 15;
+    public static final int width = 15;
+    public static final int iksoviCount = 120;
 
     public static void main(String[] args) throws FileNotFoundException {
         SplittableRandom random = new SplittableRandom();
+        String azbuka = "абвгдѓеѕжзијклљмнњопрстќуфхцчџш";
 
-        BufferedReader br = new BufferedReader(new FileReader("recnik.csv"));
-        List<String> zborovi = br.lines().map(x -> x.split(",")[1]).map(String::toLowerCase).filter(x ->
+        BufferedReader br = new BufferedReader(new FileReader("mkd-mk_web_2015_1M-words2.txt"));
+        List<String> zborovi = new ArrayList<>(br.lines().limit(20000).map(x -> x.split("\t")[1]).map(String::toLowerCase).filter(x ->
         {
             for (int i = 0; i < x.length(); i++) {
-                if (!Character.isLetter(x.charAt(i))) {
+                if (!Character.isLetter(x.charAt(i)) || azbuka.indexOf(Character.toLowerCase(x.charAt(i))) == -1) {
                     return false;
                 }
             }
             return true;
-        }).toList();
+        }).toList());
+
+        BufferedReader br2 = new BufferedReader(new FileReader("recnik.csv"));
+        zborovi.addAll(br2.lines().map(x -> x.split(",")[1]).map(String::toLowerCase).filter(x ->
+        {
+            for (int i = 0; i < x.length(); i++) {
+                if (!Character.isLetter(x.charAt(i)) || azbuka.indexOf(Character.toLowerCase(x.charAt(i))) == -1) {
+                    return false;
+                }
+            }
+            return true;
+        }).toList());
+
+        BufferedReader br3 = new BufferedReader(new FileReader("results.txt"));
+        zborovi.addAll(br3.lines().map(x -> x.split(" ")[0]).map(String::toLowerCase).filter(x ->
+        {
+            for (int i = 0; i < x.length(); i++) {
+                if (!Character.isLetter(x.charAt(i)) || azbuka.indexOf(Character.toLowerCase(x.charAt(i))) == -1) {
+                    return false;
+                }
+            }
+            return true;
+        }).toList());
 
 
-        String azbuka = "абвгдѓеѕжзијклљмнњопрстќуфхцчџш";
 //            String azbuka = "abcdefghijklmnopqrstuvwxyz";
         int maxDolzina = zborovi.stream().mapToInt(String::length).max().orElse(0);
         Map<Object, Long> dolzhina = zborovi.stream().collect(Collectors.groupingBy(x -> x.length(), Collectors.counting()));
@@ -236,10 +256,9 @@ public class Main {
             while (true) {
                 char[][] tabla = new char[length][width];
 
-
                 CustomPositionSet customPositionSet = new CustomPositionSet();
 
-                while (customPositionSet.countIksovi <= wordCount) {
+                while (customPositionSet.positions.size() <= iksoviCount) {
                     customPositionSet.add(new Position(random.nextInt(1, length), random.nextInt(1, width)));
                 }
 //                System.out.println(customPositionSet.countIksovi);
@@ -284,14 +303,18 @@ public class Main {
 
 
                     poziciiVoRed.forEach(pos -> {
-                        List<Position> intersecting = IntStream.range(pos.x + 1, pos.x + pos.length + 1)
-                                .mapToObj(horizontalniZborovi::get)
-                                .flatMap(Collection::stream)
-                                .filter(w -> w.y < pos.y && w.length + w.y >= pos.y)
-                                .toList();
+                        try {
+                            List<Position> intersecting = IntStream.range(pos.x + 1, pos.x + pos.length + 1)
+                                    .mapToObj(horizontalniZborovi::get)
+                                    .flatMap(Collection::stream)
+                                    .filter(w -> w.y < pos.y && w.length + w.y >= pos.y)
+                                    .toList();
 
-                        pos.intersecting = intersecting.stream()
-                                .collect(Collectors.toMap(intsct -> intsct.x - pos.x - 1, intsct -> new PositionIntersect(intsct, pos.y - intsct.y - 1)));
+                            pos.intersecting = intersecting.stream()
+                                    .collect(Collectors.toMap(intsct -> intsct.x - pos.x - 1, intsct -> new PositionIntersect(intsct, pos.y - intsct.y - 1)));
+                        } catch (Exception e) {
+                            pos.intersecting = new HashMap<>();
+                        }
 
                         // System.out.println(pos);
                     });
@@ -331,6 +354,20 @@ public class Main {
 
 
                 if (resenie != null) {
+                    for (Position pos : resenie.keySet()) {
+                        if (pos.direction == 'h') {
+                            for (int i = pos.y+1; i<=pos.y+pos.length; i++) {
+                                tabla[pos.x][i] = resenie.get(pos).charAt(i-pos.y-1);
+                            }
+                        } else {
+                            for (int i = pos.x+1; i<=pos.x+pos.length; i++) {
+                                tabla[i][pos.y] = resenie.get(pos).charAt(i-pos.x-1);
+                            }
+                        }
+
+                        tabla[pos.x][pos.y] = 'X';
+                    }
+
                     for (int i = 0; i < length; i++) {
                         for (int j = 0; j < width; j++) {
                             System.out.print(tabla[i][j]);

@@ -21,7 +21,7 @@ public class CSP {
 
     @Override
     public String toString() {
-        char[][] mat = new char[Main.width][Main.length];
+        char[][] mat = new char[Main.length][Main.width];
 
         variables.forEach(orel -> mat[orel.x][orel.y] = 'X');
 
@@ -63,7 +63,7 @@ public class CSP {
                 .filter(x -> !solution.containsKey(x)).sorted(Comparator.comparingInt(x -> domains.get(x).size()).thenComparing(x -> -((Position) x).intersecting.values().stream().filter(y -> y.position.length >= 4).count())).findFirst().get();
         List<String> shuffled =  new ArrayList<>(domains.get(var));
         Collections.shuffle(shuffled);
-
+        
         for(String dom : shuffled)
         {
             Map<Position, String> temp = new HashMap<>(solution);
@@ -118,11 +118,8 @@ public class CSP {
         List<Integer> emptyPositions;
         AtomicReference<Map<Position, String>> finalResenie = new AtomicReference<>();
 
-        if(var.direction == 'v' && variables.stream().filter(orel -> orel.length >= 1).count() < 100)
+        if(var.direction == 'v' && variables.stream().filter(orel -> orel.length >= 1).count() < 87)
         {
-            // System.out.println(this);
-            // System.out.println("===============");
-
             emptyPositions = var.intersecting.entrySet().stream().filter(x -> x.getKey() > 0 && x.getKey() < var.length - 1 && !solution.containsKey(x.getValue().position)).map(x -> x.getKey()).sorted((x1, x2) -> {
                 int distanceToMiddle = Math.abs(var.length / 2);
                 return Integer.compare(Math.abs(x1 - distanceToMiddle), Math.abs(x2 - distanceToMiddle));
@@ -229,11 +226,8 @@ public class CSP {
             });
         }
 
-        if(var.direction == 'h' && variables.stream().filter(orel -> orel.length >= 1).count() < 100)
+        if(var.direction == 'h' && variables.stream().filter(orel -> orel.length >= 1).count() < 87)
         {
-            // System.out.println(this);
-            // System.out.println("===============");
-
             emptyPositions = var.intersecting.entrySet().stream().filter(y -> y.getKey() > 0 && y.getKey() < var.length - 1 && !solution.containsKey(y.getValue().position)).map(y -> y.getKey()).sorted((x1, x2) -> {
                 int distanceToMiddle = Math.abs(var.length / 2);
                 return Integer.compare(Math.abs(x1 - distanceToMiddle), Math.abs(x2 - distanceToMiddle));
