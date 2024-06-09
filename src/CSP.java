@@ -5,11 +5,11 @@ import java.util.stream.Collectors;
 
 public class CSP {
     private List<Position> variables;
-    private Map<Position, HashSet<String>> domains;
-    private Map<Position, List<Constraint<Position, String>>> constraints;
-    private  Map<Integer, Map<Character, Map<Integer, Set<String>>>> zboroviMapirani;
+    private Map<Position, HashSet<Word>> domains;
+    private Map<Position, List<Constraint<Position, Word>>> constraints;
+    private  Map<Integer, Map<Character, Map<Integer, Set<Word>>>> zboroviMapirani;
 
-    public CSP(List<Position> variables, Map<Position, HashSet<String>> domains,  Map<Integer, Map<Character, Map<Integer, Set<String>>>> zboroviMapirani) {
+    public CSP(List<Position> variables, Map<Position, HashSet<Word>> domains,  Map<Integer, Map<Character, Map<Integer, Set<Word>>>> zboroviMapirani) {
         this.variables = variables;
         this.domains = domains;
         constraints = new HashMap<>();
@@ -42,17 +42,17 @@ public class CSP {
         return sb.toString();
     }
 
-    public void addConstraint(Constraint<Position, String> constraint)
+    public void addConstraint(Constraint<Position, Word> constraint)
     {
         constraint.variables.forEach(var -> constraints.get(var).add(constraint));
     }
 
-    public boolean solutionValid(Position var, Map<Position, String> solution)
+    public boolean solutionValid(Position var, Map<Position, Word> solution)
     {
         return constraints.get(var).stream().allMatch(x -> x.checkConstraint(solution));
     }
 
-    public Map<Position, String> backtrack (Map<Position, String> solution)
+    public Map<Position, Word> backtrack (Map<Position, Word> solution)
     {
         if(solution.size() == variables.stream().filter(x -> x.length >= 4).count())
         {
@@ -61,14 +61,14 @@ public class CSP {
 
         Position var = variables.stream().filter(x -> x.length >= 4)
                 .filter(x -> !solution.containsKey(x)).sorted(Comparator.comparingInt(x -> domains.get(x).size()).thenComparing(x -> -((Position) x).intersecting.values().stream().filter(y -> y.position.length >= 4).count())).findFirst().get();
-        List<String> shuffled =  new ArrayList<>(domains.get(var));
+        List<Word> shuffled =  new ArrayList<>(domains.get(var));
         Collections.shuffle(shuffled);
         
-        for(String dom : shuffled)
+        for(Word dom : shuffled)
         {
-            Map<Position, String> temp = new HashMap<>(solution);
+            Map<Position, Word> temp = new HashMap<>(solution);
             temp.put(var, dom);
-            Map<Position, HashSet<String>> domainsBckp = new HashMap<>(domains);
+            Map<Position, HashSet<Word>> domainsBckp = new HashMap<>(domains);
             boolean validAct = true;
 
             if(solutionValid(var, temp))
@@ -83,7 +83,7 @@ public class CSP {
                     }
                     int position2 = entry.getValue().point;
                     try {
-                        Set<String> newDomain = zboroviMapirani.get(var2.length).get(temp.get(var).toString().charAt(position)).get(position2);
+                        Set<Word> newDomain = zboroviMapirani.get(var2.length).get(temp.get(var).word.toString().charAt(position)).get(position2);
                         if(!temp.containsKey(var2))
                         {
                             domains.get(var2).retainAll(newDomain);
@@ -104,7 +104,7 @@ public class CSP {
                 }
 
                 if (validAct) {
-                    Map<Position, String> finalResult = backtrack(temp);
+                    Map<Position, Word> finalResult = backtrack(temp);
                     if(finalResult != null)
                     {
                         return finalResult;
@@ -116,9 +116,9 @@ public class CSP {
         }
 
         List<Integer> emptyPositions;
-        AtomicReference<Map<Position, String>> finalResenie = new AtomicReference<>();
+        AtomicReference<Map<Position, Word>> finalResenie = new AtomicReference<>();
 
-        if(var.direction == 'v' && variables.stream().filter(orel -> orel.length >= 1).count() < 87)
+        if(var.direction == 'v' && variables.stream().filter(orel -> orel.length >= 1).count() < 90)
         {
             emptyPositions = var.intersecting.entrySet().stream().filter(x -> x.getKey() > 0 && x.getKey() < var.length - 1 && !solution.containsKey(x.getValue().position)).map(x -> x.getKey()).sorted((x1, x2) -> {
                 int distanceToMiddle = Math.abs(var.length / 2);
@@ -146,7 +146,7 @@ public class CSP {
                 newVariables.add(p);
                 newVariables.stream().filter(stara -> stara.equals(var)).findFirst().get().length = x;
                 newVariables.stream().filter(stara -> stara.equals(var)).findFirst().get().intersecting = newVariables.stream().filter(stara -> stara.equals(var)).findFirst().get().intersecting.entrySet().stream().filter(orel -> orel.getKey() < x).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));;
-                Map<Position, HashSet<String>> novDomain = new HashMap<>(domains);
+                Map<Position, HashSet<Word>> novDomain = new HashMap<>(domains);
                 novDomain.put(p, zboroviMapirani.get(p.length).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
                 novDomain.put(var, zboroviMapirani.get(x).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
 
@@ -180,13 +180,13 @@ public class CSP {
                 if (p2.length > 0) {
                     novDomain.put(p2, zboroviMapirani.get(p2.length).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
                 } else {
-                    novDomain.put(p2, new HashSet<String>());
+                    novDomain.put(p2, new HashSet<Word>());
                 }
 
                 if (var.intersecting.get(x).point != 0) {
                     novDomain.put(intersectingWord, zboroviMapirani.get(var.intersecting.get(x).point).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
                 } else {
-                    novDomain.put(intersectingWord, new HashSet<String>());
+                    novDomain.put(intersectingWord, new HashSet<Word>());
                 }
 
                 i.set(p2.x);
@@ -210,14 +210,15 @@ public class CSP {
                 krstozbor.addConstraint(new WordLengthConstraint(newVariables));
                 krstozbor.addConstraint(new AllDifferentConstraint(newVariables));
                 krstozbor.addConstraint(new IntersectionConstraint(newVariables));
+                krstozbor.addConstraint(new DifficultyConstraint(newVariables));
                 //System.out.println(this);
                 //System.out.println("===============");
                 //System.out.println(krstozbor);
                 //System.out.println("^^^^^^^^^^");
 
-                Map<Position, String> solution2 = new TreeMap<>();
+                Map<Position, Word> solution2 = new TreeMap<>();
                 solution.entrySet().forEach(varSolution -> solution2.put(newVariables.stream().filter(stara -> stara.equals(varSolution.getKey())).findFirst().get(), varSolution.getValue()));
-                Map<Position, String> resenie = krstozbor.backtrack(solution2);
+                Map<Position, Word> resenie = krstozbor.backtrack(solution2);
 
                 if (resenie != null) {
                     System.out.println("TEMP RESHENIE");
@@ -226,7 +227,7 @@ public class CSP {
             });
         }
 
-        if(var.direction == 'h' && variables.stream().filter(orel -> orel.length >= 1).count() < 87)
+        if(var.direction == 'h' && variables.stream().filter(orel -> orel.length >= 1).count() < 90)
         {
             emptyPositions = var.intersecting.entrySet().stream().filter(y -> y.getKey() > 0 && y.getKey() < var.length - 1 && !solution.containsKey(y.getValue().position)).map(y -> y.getKey()).sorted((x1, x2) -> {
                 int distanceToMiddle = Math.abs(var.length / 2);
@@ -254,7 +255,7 @@ public class CSP {
                 newVariables.add(p);
                 newVariables.stream().filter(stara -> stara.equals(var)).findFirst().get().length = y;
                 newVariables.stream().filter(stara -> stara.equals(var)).findFirst().get().intersecting = newVariables.stream().filter(stara -> stara.equals(var)).findFirst().get().intersecting.entrySet().stream().filter(orel -> orel.getKey() < y).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));;
-                Map<Position, HashSet<String>> novDomain = new HashMap<>(domains);
+                Map<Position, HashSet<Word>> novDomain = new HashMap<>(domains);
                 novDomain.put(p, zboroviMapirani.get(p.length).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
                 novDomain.put(var, zboroviMapirani.get(y).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
 
@@ -294,13 +295,13 @@ public class CSP {
                 if (p2.length > 0) {
                     novDomain.put(p2, zboroviMapirani.get(p2.length).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
                 } else {
-                    novDomain.put(p2, new HashSet<String>());
+                    novDomain.put(p2, new HashSet<Word>());
                 }
 
                 if (var.intersecting.get(y).point != 0) {
                     novDomain.put(intersectingWord, zboroviMapirani.get(var.intersecting.get(y).point).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
                 } else {
-                    novDomain.put(intersectingWord, new HashSet<String>());
+                    novDomain.put(intersectingWord, new HashSet<Word>());
                 }
 
                 i.set(p2.y);
@@ -323,14 +324,15 @@ public class CSP {
                 krstozbor.addConstraint(new WordLengthConstraint(newVariables));
                 krstozbor.addConstraint(new AllDifferentConstraint(newVariables));
                 krstozbor.addConstraint(new IntersectionConstraint(newVariables));
+                krstozbor.addConstraint(new DifficultyConstraint(newVariables));
                 //System.out.println(this);
                 //System.out.println("===============");
                 //System.out.println(krstozbor);
                 //System.out.println("^^^^^^^^^^");
 
-                Map<Position, String> solution2 = new TreeMap<>();
+                Map<Position, Word> solution2 = new TreeMap<>();
                 solution.entrySet().forEach(varSolution -> solution2.put(newVariables.stream().filter(stara -> stara.equals(varSolution.getKey())).findFirst().get(), varSolution.getValue()));
-                Map<Position, String> resenie = krstozbor.backtrack(solution2);
+                Map<Position, Word> resenie = krstozbor.backtrack(solution2);
 
                 if (resenie != null) {
                     System.out.println("TEMP RESHENIE");

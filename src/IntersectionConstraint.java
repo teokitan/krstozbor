@@ -1,15 +1,15 @@
 import java.util.List;
 import java.util.Map;
 
-public class IntersectionConstraint extends Constraint<Position, String> {
+public class IntersectionConstraint extends Constraint<Position, Word> {
     public IntersectionConstraint(List<Position> variables) {
         super(variables);
     }
 
     @Override
-    public boolean checkConstraint(Map<Position, String> solution) {
+    public boolean checkConstraint(Map<Position, Word> solution) {
         for (Position variable : solution.keySet()) {
-            String sol =  solution.get(variable);
+            Word sol =  solution.get(variable);
             if(sol == null)
             {
                 continue;
@@ -25,15 +25,15 @@ public class IntersectionConstraint extends Constraint<Position, String> {
                 int pos1 = var.getKey();
                 int pos2 = var.getValue().point;
 
-                if (pos1 >= sol.length()) {
+                if (pos1 >= sol.word.length()) {
                     System.out.println();
                 }
 
-                if (pos2 >= solution.get(var.getValue().position).length()) {
+                if (pos2 >= solution.get(var.getValue().position).word.length()) {
                     System.out.println();
                 }
 
-                return sol.charAt(pos1) == solution.get(var.getValue().position).charAt(pos2);
+                return sol.word.charAt(pos1) == solution.get(var.getValue().position).word.charAt(pos2);
             }))
             {
                 return false;

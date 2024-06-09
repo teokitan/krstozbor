@@ -181,55 +181,44 @@ class CustomPositionSet {
     }
 }
 
+class Word implements Comparable<Word> {
+    String word;
+    int rarity;
+
+    public Word (String word, int rarity) {
+        this.word = word;
+        this.rarity = rarity;
+    }
+
+    public Word (String word, String rarity) {
+        this.word = word;
+        this.rarity = Integer.valueOf(rarity);
+    }
+
+    public int compareTo (Word otherWord) {
+        return this.word.compareTo(otherWord.word);
+    }
+}
+
 
 public class Main {
     public static final int length = 15;
     public static final int width = 15;
-    public static final int iksoviCount = 120;
+    public static final int iksoviCount = 115;
 
     public static void main(String[] args) throws FileNotFoundException {
         SplittableRandom random = new SplittableRandom();
         String azbuka = "абвгдѓеѕжзијклљмнњопрстќуфхцчџш";
 
-        BufferedReader br = new BufferedReader(new FileReader("mkd-mk_web_2015_1M-words2.txt"));
-        List<String> zborovi = new ArrayList<>(br.lines().limit(20000).map(x -> x.split("\t")[1]).map(String::toLowerCase).filter(x ->
-        {
-            for (int i = 0; i < x.length(); i++) {
-                if (!Character.isLetter(x.charAt(i)) || azbuka.indexOf(Character.toLowerCase(x.charAt(i))) == -1) {
-                    return false;
-                }
-            }
-            return true;
-        }).toList());
-
-        BufferedReader br2 = new BufferedReader(new FileReader("recnik.csv"));
-        zborovi.addAll(br2.lines().map(x -> x.split(",")[1]).map(String::toLowerCase).filter(x ->
-        {
-            for (int i = 0; i < x.length(); i++) {
-                if (!Character.isLetter(x.charAt(i)) || azbuka.indexOf(Character.toLowerCase(x.charAt(i))) == -1) {
-                    return false;
-                }
-            }
-            return true;
-        }).toList());
-
-        BufferedReader br3 = new BufferedReader(new FileReader("results.txt"));
-        zborovi.addAll(br3.lines().map(x -> x.split(" ")[0]).map(String::toLowerCase).filter(x ->
-        {
-            for (int i = 0; i < x.length(); i++) {
-                if (!Character.isLetter(x.charAt(i)) || azbuka.indexOf(Character.toLowerCase(x.charAt(i))) == -1) {
-                    return false;
-                }
-            }
-            return true;
-        }).toList());
+        BufferedReader br = new BufferedReader(new FileReader("allResults.txt"));
+        List<Word> zborovi = new ArrayList<>(br.lines().map(x -> new Word(x.split(",")[1], x.split(",")[2])).toList());
 
 
 //            String azbuka = "abcdefghijklmnopqrstuvwxyz";
-        int maxDolzina = zborovi.stream().mapToInt(String::length).max().orElse(0);
-        Map<Object, Long> dolzhina = zborovi.stream().collect(Collectors.groupingBy(x -> x.length(), Collectors.counting()));
-        Map<Integer, Map<Character, Map<Integer, Set<String>>>> zboroviMapirani = new TreeMap<>();
-        zborovi.stream().map(String::length).forEach(x -> zboroviMapirani.putIfAbsent(x, new TreeMap<>()));
+        int maxDolzina = zborovi.stream().mapToInt(x -> x.word.length()).max().orElse(0);
+        Map<Object, Long> dolzhina = zborovi.stream().collect(Collectors.groupingBy(x -> x.word.length(), Collectors.counting()));
+        Map<Integer, Map<Character, Map<Integer, Set<Word>>>> zboroviMapirani = new TreeMap<>();
+        zborovi.stream().map(x -> x.word.length()).forEach(x -> zboroviMapirani.putIfAbsent(x, new TreeMap<>()));
         zboroviMapirani.values().stream().forEach(x -> {
             azbuka.chars().mapToObj(y -> (char) y).forEach(y -> x.putIfAbsent(y, new TreeMap<>()));
         });
@@ -238,13 +227,13 @@ public class Main {
         });
 
         zboroviMapirani.entrySet().forEach(x -> {
-            Set<String> filterZborovi = zborovi.stream().filter(zbor -> zbor.length() == x.getKey()).collect(Collectors.toSet());
+            Set<Word> filterZborovi = zborovi.stream().filter(zbor -> zbor.word.length() == x.getKey()).collect(Collectors.toSet());
             x.getValue().entrySet().forEach(y -> {
-                Set<String> filterFilterZborovi = filterZborovi.stream().filter(z -> z.contains(String.valueOf(y.getKey()))).collect(Collectors.toSet());
+                Set<Word> filterFilterZborovi = filterZborovi.stream().filter(z -> z.word.contains(String.valueOf(y.getKey()))).collect(Collectors.toSet());
                 y.getValue().entrySet().forEach(p -> p.setValue(filterFilterZborovi.stream().filter(zbor ->
                 {
-                    if (zbor.length() > p.getKey()) {
-                        return zbor.charAt(p.getKey()) == y.getKey();
+                    if (zbor.word.length() > p.getKey()) {
+                        return zbor.word.charAt(p.getKey()) == y.getKey();
                     }
                     return false;
                 }).collect(Collectors.toSet())).addAll(p.getValue()));
@@ -324,14 +313,18 @@ public class Main {
                     List<Position> poziciiVoRed = horizontalniZborovi.get(x).stream().toList();
 
                     poziciiVoRed.forEach(pos -> {
-                        List<Position> intersecting = IntStream.range(pos.y + 1, pos.y + pos.length + 1)
-                                .mapToObj(vertikalniZborovi::get)
-                                .flatMap(Collection::stream)
-                                .filter(w -> w.x < pos.x && w.length + w.x >= pos.x)
-                                .toList();
+                        try {
+                            List<Position> intersecting = IntStream.range(pos.y + 1, pos.y + pos.length + 1)
+                                    .mapToObj(vertikalniZborovi::get)
+                                    .flatMap(Collection::stream)
+                                    .filter(w -> w.x < pos.x && w.length + w.x >= pos.x)
+                                    .toList();
 
-                        pos.intersecting = intersecting.stream()
-                                .collect(Collectors.toMap(intsct -> intsct.y - pos.y - 1, intsct -> new PositionIntersect(intsct, pos.x - intsct.x - 1)));
+                            pos.intersecting = intersecting.stream()
+                                    .collect(Collectors.toMap(intsct -> intsct.y - pos.y - 1, intsct -> new PositionIntersect(intsct, pos.x - intsct.x - 1)));
+                        } catch (Exception e) {
+                            pos.intersecting = new HashMap<>();
+                        }
                     });
                 });
 
@@ -339,17 +332,18 @@ public class Main {
 //                List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length >= 4).toList();
                 List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length != 0).toList();
 
-                Map<Position, HashSet<String>> domain = listaPozicii.stream()
+                Map<Position, HashSet<Word>> domain = listaPozicii.stream()
                         .collect(Collectors.toMap(
                                 x -> x,
-                                x -> (HashSet<String>) zboroviMapirani.getOrDefault(x.length, new HashMap<>()).values().stream().flatMap(val -> val.values().stream().flatMap(Collection::stream)).distinct().collect(Collectors.toSet())));
+                                x -> (HashSet<Word>) zboroviMapirani.getOrDefault(x.length, new HashMap<>()).values().stream().flatMap(val -> val.values().stream().flatMap(Collection::stream)).distinct().collect(Collectors.toSet())));
                 CSP krstozbor = new CSP(listaPozicii, domain, zboroviMapirani);
                 krstozbor.addConstraint(new WordLengthConstraint(listaPozicii));
                 krstozbor.addConstraint(new AllDifferentConstraint(listaPozicii));
                 krstozbor.addConstraint(new IntersectionConstraint(listaPozicii));
+                krstozbor.addConstraint(new DifficultyConstraint(listaPozicii));
                 char[][] orelorel = customPositionSet.tabla();
 
-                Map<Position, String> resenie = krstozbor.backtrack(new TreeMap<>());
+                Map<Position, Word> resenie = krstozbor.backtrack(new TreeMap<>());
                 tabla = customPositionSet.tabla();
 
 
@@ -357,11 +351,11 @@ public class Main {
                     for (Position pos : resenie.keySet()) {
                         if (pos.direction == 'h') {
                             for (int i = pos.y+1; i<=pos.y+pos.length; i++) {
-                                tabla[pos.x][i] = resenie.get(pos).charAt(i-pos.y-1);
+                                tabla[pos.x][i] = resenie.get(pos).word.charAt(i-pos.y-1);
                             }
                         } else {
                             for (int i = pos.x+1; i<=pos.x+pos.length; i++) {
-                                tabla[i][pos.y] = resenie.get(pos).charAt(i-pos.x-1);
+                                tabla[i][pos.y] = resenie.get(pos).word.charAt(i-pos.x-1);
                             }
                         }
 
