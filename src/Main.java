@@ -1,10 +1,14 @@
+import org.w3c.dom.ls.LSOutput;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -109,7 +113,7 @@ class CustomPositionSet {
     }
 
     public boolean add(Position position) {
-        if (positions.contains(position))  {
+        if (positions.contains(position)) {
             return false;
         }
 
@@ -185,18 +189,23 @@ class Word implements Comparable<Word> {
     String word;
     int rarity;
 
-    public Word (String word, int rarity) {
+    public Word(String word, int rarity) {
         this.word = word;
         this.rarity = rarity;
     }
 
-    public Word (String word, String rarity) {
+    public Word(String word, String rarity) {
         this.word = word;
         this.rarity = Integer.valueOf(rarity);
     }
 
-    public int compareTo (Word otherWord) {
+    public int compareTo(Word otherWord) {
         return this.word.compareTo(otherWord.word);
+    }
+
+    @Override
+    public String toString() {
+        return word;
     }
 }
 
@@ -204,7 +213,18 @@ class Word implements Comparable<Word> {
 public class Main {
     public static final int length = 15;
     public static final int width = 15;
-    public static final int iksoviCount = 115;
+    public static final int iksoviCount = 120;
+    //    public static Semaphore availableThreads = new Semaphore(15);
+//    public static final ExecutorService executorService = Executors.newFixedThreadPool(15);
+//    public static volatile boolean solutionFound = false;
+    public static AtomicReference<Map<Position, Word>> finalResenie = new AtomicReference<>();
+    public static TaskManager taskManager = new TaskManager();
+    public static LocalDateTime startTime = LocalDateTime.now();
+
+
+//    public static CompletionService<Map<Position, Word>> completionService = new ExecutorCompletionService<>(executorService);
+//    public final static LinkedBlockingQueue<Callable<Map<Position, Word>>> taskQueue = new LinkedBlockingQueue<>();
+
 
     public static void main(String[] args) throws FileNotFoundException {
         SplittableRandom random = new SplittableRandom();
@@ -239,15 +259,14 @@ public class Main {
                 }).collect(Collectors.toSet())).addAll(p.getValue()));
             });
         });
-
-        for (int ii = 0; ii <= 10; ii++) {
-            LocalDateTime startTime = LocalDateTime.now();
+        Main.startTime = LocalDateTime.now();
+        for (int ii = 0; ii <= 0; ii++) {
             while (true) {
                 char[][] tabla = new char[length][width];
 
                 CustomPositionSet customPositionSet = new CustomPositionSet();
 
-                while (customPositionSet.positions.size() <= iksoviCount) {
+                while (customPositionSet.positions.size() <= 115) {
                     customPositionSet.add(new Position(random.nextInt(1, length), random.nextInt(1, width)));
                 }
 //                System.out.println(customPositionSet.countIksovi);
@@ -336,26 +355,57 @@ public class Main {
                         .collect(Collectors.toMap(
                                 x -> x,
                                 x -> (HashSet<Word>) zboroviMapirani.getOrDefault(x.length, new HashMap<>()).values().stream().flatMap(val -> val.values().stream().flatMap(Collection::stream)).distinct().collect(Collectors.toSet())));
+//                                x -> (HashSet<String>) zboroviMapirani.getOrDefault(x.length, new HashMap<>()).values().stream().flatMap(val -> val.values().stream().flatMap(Collection::stream)).distinct().collect(Collectors.toSet())));
+
                 CSP krstozbor = new CSP(listaPozicii, domain, zboroviMapirani);
                 krstozbor.addConstraint(new WordLengthConstraint(listaPozicii));
                 krstozbor.addConstraint(new AllDifferentConstraint(listaPozicii));
                 krstozbor.addConstraint(new IntersectionConstraint(listaPozicii));
                 krstozbor.addConstraint(new DifficultyConstraint(listaPozicii));
                 char[][] orelorel = customPositionSet.tabla();
+//                Map<Position, Word> resenie = krstozbor.backtrack(new TreeMap<>());
 
-                Map<Position, Word> resenie = krstozbor.backtrack(new TreeMap<>());
+                Map<Position, Word> resenie = null;
+                taskManager.addTask(krstozbor);
+                taskManager.startResutlsHandling();
+//                try {
+//                    // Start initial tasks
+//                    while (!taskQueue.isEmpty() && !solutionFound) {
+//                        Callable<Map<Position, Word>> task = taskQueue.poll();
+//                        if (task != null) {
+//                            completionService.submit(task);
+//                        }
+//                    }
+//
+//                    while (!solutionFound) {
+//                        Future<Map<Position, Word>> future = completionService.take(); // Blocks until a result is available
+//                        Map<Position, Word> solution = future.get();
+//                        if (solution != null) {
+//                            solutionFound = true;
+//                            finalResenie.set(solution);
+//                            System.out.println("Solution found: " + solution);
+//                            break;
+//                        }
+//                    }
+//                } catch (InterruptedException | ExecutionException e) {
+//                    e.printStackTrace();
+//                } finally {
+//                    executorService.shutdownNow(); // Shutdown all threads immediately
+//                }
+                ;
                 tabla = customPositionSet.tabla();
 
 
-                if (resenie != null) {
-                    for (Position pos : resenie.keySet()) {
+                if (finalResenie.get() != null) {
+                    System.out.println("Vreme main: " + Duration.between(Main.startTime, LocalDateTime.now()).toMillis());
+                    for (Position pos : finalResenie.get().keySet()) {
                         if (pos.direction == 'h') {
-                            for (int i = pos.y+1; i<=pos.y+pos.length; i++) {
-                                tabla[pos.x][i] = resenie.get(pos).word.charAt(i-pos.y-1);
+                            for (int i = pos.y + 1; i <= pos.y + pos.length; i++) {
+                                tabla[pos.x][i] = finalResenie.get().get(pos).word.charAt(i - pos.y - 1);
                             }
                         } else {
-                            for (int i = pos.x+1; i<=pos.x+pos.length; i++) {
-                                tabla[i][pos.y] = resenie.get(pos).word.charAt(i-pos.x-1);
+                            for (int i = pos.x + 1; i <= pos.x + pos.length; i++) {
+                                tabla[i][pos.y] = finalResenie.get().get(pos).word.charAt(i - pos.x - 1);
                             }
                         }
 
@@ -368,14 +418,15 @@ public class Main {
                         }
                         System.out.println();
                     }
-                    System.out.println(resenie);
+                    System.out.println(finalResenie.get());
                     break;
                 } else System.out.println("nema");
+//                break;
             }
-            LocalDateTime endTime = LocalDateTime.now();
-            Duration duration = Duration.between(startTime, endTime);
-            long milliseconds = duration.toMillis();
+            System.out.println("KRAJ FOR");
+
 //            System.out.println("Milisekudni: " + milliseconds);
         }
+        System.out.println("KRAJ MAIN");
     }
 }

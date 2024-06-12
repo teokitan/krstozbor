@@ -1,9 +1,10 @@
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-public class CSP {
+public class CSP implements Callable<Map<Position, Word>> {
     private List<Position> variables;
     private Map<Position, HashSet<Word>> domains;
     private Map<Position, List<Constraint<Position, Word>>> constraints;
@@ -115,18 +116,19 @@ public class CSP {
             }
         }
 
+        System.out.println("NEMA LEGALNO");
         List<Integer> emptyPositions;
-        AtomicReference<Map<Position, Word>> finalResenie = new AtomicReference<>();
 
         if(var.direction == 'v' && variables.stream().filter(orel -> orel.length >= 1).count() < 90)
         {
+
             emptyPositions = var.intersecting.entrySet().stream().filter(x -> x.getKey() > 0 && x.getKey() < var.length - 1 && !solution.containsKey(x.getValue().position)).map(x -> x.getKey()).sorted((x1, x2) -> {
                 int distanceToMiddle = Math.abs(var.length / 2);
                 return Integer.compare(Math.abs(x1 - distanceToMiddle), Math.abs(x2 - distanceToMiddle));
             }).toList();
 
             emptyPositions.forEach(x -> {
-                if (finalResenie.get() != null) {
+                if (Main.finalResenie.get() != null) {
                     return;
                 }
 
@@ -205,6 +207,13 @@ public class CSP {
                     }
                 });
 
+//
+//                try {
+//                    Main.availableThreads.acquire();
+//
+//                } catch (InterruptedException e) {
+//                    throw new RuntimeException(e);
+//                }
 
                 CSP krstozbor = new CSP(newVariables, novDomain, zboroviMapirani);
                 krstozbor.addConstraint(new WordLengthConstraint(newVariables));
@@ -218,12 +227,20 @@ public class CSP {
 
                 Map<Position, Word> solution2 = new TreeMap<>();
                 solution.entrySet().forEach(varSolution -> solution2.put(newVariables.stream().filter(stara -> stara.equals(varSolution.getKey())).findFirst().get(), varSolution.getValue()));
-                Map<Position, Word> resenie = krstozbor.backtrack(solution2);
+//                Map<Position, String> resenie = krstozbor.backtrack(solution2);
+                //Map<Position, Word> resenie = krstozbor.backtrack(solution2);
 
-                if (resenie != null) {
-                    System.out.println("TEMP RESHENIE");
-                    finalResenie.set(resenie);
+                System.out.println(Main.finalResenie.get());
+                if(Main.finalResenie.get() == null)
+                {
+                    System.out.println("DODELENO");
+                    Main.taskManager.addTask(krstozbor);
                 }
+
+//                if (!Main.solutionFound) {
+//                    System.out.println("TEMP RESHENIE");
+//                    finalResenie.set(resenie);
+//                }
             });
         }
 
@@ -235,7 +252,7 @@ public class CSP {
             }).toList();
 
             emptyPositions.forEach(y -> {
-                if (finalResenie.get() != null) {
+                if (Main.finalResenie.get() != null) {
                     return;
                 }
 
@@ -334,18 +351,29 @@ public class CSP {
                 solution.entrySet().forEach(varSolution -> solution2.put(newVariables.stream().filter(stara -> stara.equals(varSolution.getKey())).findFirst().get(), varSolution.getValue()));
                 Map<Position, Word> resenie = krstozbor.backtrack(solution2);
 
-                if (resenie != null) {
-                    System.out.println("TEMP RESHENIE");
-                    finalResenie.set(resenie);
+                System.out.println(Main.finalResenie.get());
+                if(Main.finalResenie.get() == null)
+                {
+                    System.out.println("DODELENO");
+                    Main.taskManager.addTask(krstozbor);
                 }
+//                Map<Position, String> resenie = krstozbor.backtrack(solution2);
+
+//                if (resenie != null) {
+//                    System.out.println("TEMP RESHENIE");
+//                    finalResenie.set(resenie);
+//                }
             });
         }
-
-        if (finalResenie.get() != null) {
-            return finalResenie.get();
-        } else {
-            return null;
-        }
+        System.out.println("CRKNA GLAVNIOT");
+        return null;
     }
 
+    @Override
+    public Map<Position, Word> call() throws Exception {
+        System.out.println("Start");
+        Map<Position, Word> res = backtrack(new HashMap<>());
+        System.out.println("KRAJ CALL");
+        return res;
+    }
 }
