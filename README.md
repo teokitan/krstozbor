@@ -1,0 +1,1 @@
+# Automatic Macedonian Crossword Generator
