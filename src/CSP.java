@@ -1,14 +1,14 @@
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class CSP implements Callable<Map<Position, Word>> {
     private List<Position> variables;
     private Map<Position, HashSet<Word>> domains;
     private Map<Position, List<Constraint<Position, Word>>> constraints;
-    private  Map<Integer, Map<Character, Map<Integer, Set<Word>>>> zboroviMapirani;
+    private Map<Integer, Map<Character, Map<Integer, Set<Word>>>> zboroviMapirani;
+
+    public static final int wordSplitCount = 90;
 
     public CSP(List<Position> variables, Map<Position, HashSet<Word>> domains,  Map<Integer, Map<Character, Map<Integer, Set<Word>>>> zboroviMapirani) {
         this.variables = variables;
@@ -116,264 +116,123 @@ public class CSP implements Callable<Map<Position, Word>> {
             }
         }
 
-        System.out.println("NEMA LEGALNO");
         List<Integer> emptyPositions;
 
-        if(var.direction == 'v' && variables.stream().filter(orel -> orel.length >= 1).count() < 90)
-        {
+        if (variables.stream().filter(orel -> orel.length >= 1).count() < wordSplitCount) {
+            boolean isVertical = var.direction == 'v';
 
-            emptyPositions = var.intersecting.entrySet().stream().filter(x -> x.getKey() > 0 && x.getKey() < var.length - 1 && !solution.containsKey(x.getValue().position)).map(x -> x.getKey()).sorted((x1, x2) -> {
-                int distanceToMiddle = Math.abs(var.length / 2);
-                return Integer.compare(Math.abs(x1 - distanceToMiddle), Math.abs(x2 - distanceToMiddle));
-            }).toList();
+            emptyPositions = var.intersecting.entrySet().stream()
+                    .filter(entry -> entry.getKey() > 0 && entry.getKey() < var.length - 1 && !solution.containsKey(entry.getValue().position))
+                    .map(Map.Entry::getKey)
+                    .sorted((key1, key2) -> {
+                        int distanceToMiddle = Math.abs(var.length / 2);
+                        return Integer.compare(Math.abs(key1 - distanceToMiddle), Math.abs(key2 - distanceToMiddle));
+                    }).toList();
 
-            emptyPositions.forEach(x -> {
+            emptyPositions.forEach(positionKey -> {
                 if (Main.finalResenie.get() != null) {
                     return;
                 }
 
-                Position p = new Position(var.x + x + 1, var.y, var.direction);
-                p.length = var.length - x - 1;
-                var.intersecting.entrySet().stream().filter(stara -> stara.getKey() > x).forEach(orel -> p.intersecting.put(orel.getKey()-x-1, orel.getValue()));
-                List<Position> newVariables =  variables.stream().map(Position::copy).collect(Collectors.toCollection(ArrayList::new));
+                Position p = isVertical
+                        ? new Position(var.x + positionKey + 1, var.y, var.direction)
+                        : new Position(var.x, var.y + positionKey + 1, var.direction);
+                p.length = var.length - positionKey - 1;
+
+                var.intersecting.entrySet().stream()
+                        .filter(entry -> entry.getKey() > positionKey)
+                        .forEach(entry -> p.intersecting.put(entry.getKey() - positionKey - 1, entry.getValue()));
+
+                List<Position> newVariables = variables.stream().map(Position::copy).collect(Collectors.toCollection(ArrayList::new));
                 newVariables.forEach(presek -> {
-                    Map<Integer, PositionIntersect> preseci = variables.stream().filter(orel -> orel.equals(presek)).findFirst().get().intersecting;
+                    Map<Integer, PositionIntersect> preseci = variables.stream()
+                            .filter(orel -> orel.equals(presek))
+                            .findFirst()
+                            .get().intersecting;
+
                     presek.intersecting = new HashMap<>();
                     preseci.forEach((key, value) -> {
                         Position intersectingPosition = value.position;
-                        Position newIntersectingPosition = newVariables.stream().filter(news -> news.x == intersectingPosition.x && news.y == intersectingPosition.y && news.direction != presek.direction).findFirst().get();
+                        Position newIntersectingPosition = newVariables.stream()
+                                .filter(news -> (isVertical
+                                        ? (news.x == intersectingPosition.x && news.y == intersectingPosition.y)
+                                        : (news.y == intersectingPosition.y && news.x == intersectingPosition.x))
+                                        && news.direction != presek.direction)
+                                .findFirst()
+                                .get();
                         presek.intersecting.put(key, new PositionIntersect(newIntersectingPosition, value.point));
                     });
                 });
+
                 newVariables.add(p);
-                newVariables.stream().filter(stara -> stara.equals(var)).findFirst().get().length = x;
-                newVariables.stream().filter(stara -> stara.equals(var)).findFirst().get().intersecting = newVariables.stream().filter(stara -> stara.equals(var)).findFirst().get().intersecting.entrySet().stream().filter(orel -> orel.getKey() < x).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));;
+                Position currentVar = newVariables.stream().filter(stara -> stara.equals(var)).findFirst().get();
+                currentVar.length = positionKey;
+                currentVar.intersecting = currentVar.intersecting.entrySet().stream()
+                        .filter(entry -> entry.getKey() < positionKey)
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
                 Map<Position, HashSet<Word>> novDomain = new HashMap<>(domains);
-                novDomain.put(p, zboroviMapirani.get(p.length).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
-                novDomain.put(var, zboroviMapirani.get(x).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
+                novDomain.put(p, zboroviMapirani.get(p.length).values().stream()
+                        .flatMap(map -> map.values().stream().flatMap(Collection::stream))
+                        .collect(Collectors.toCollection(HashSet::new)));
+                novDomain.put(currentVar, zboroviMapirani.get(positionKey).values().stream()
+                        .flatMap(map -> map.values().stream().flatMap(Collection::stream))
+                        .collect(Collectors.toCollection(HashSet::new)));
 
-                Iterator<Map.Entry<Integer, PositionIntersect>> iter = var.intersecting.entrySet().iterator();
-                AtomicInteger i = new AtomicInteger();
-                var.intersecting.entrySet().forEach(orel -> {
-                    if(orel.getKey() > x)
-                    {
-                      //  int myKey = orel.getValue().position.intersecting.entrySet().stream().filter(orel2 -> orel2.getValue().position.equals(var)).findFirst().get().getKey();
-                        newVariables.stream().filter(stara -> stara.equals(orel.getValue().position)).findFirst().get().intersecting.put(orel.getValue().point, new PositionIntersect(p, orel.getKey() - x - 1));
-                        i.getAndIncrement();
-                    }
-                    if(orel.getKey() == x)
-                    {
-                        newVariables.stream().filter(stara -> stara.equals(orel.getValue().position)).findFirst().get().intersecting.remove(orel.getValue().point);
-                    }
-                });
+                Position intersectingWord = var.intersecting.get(positionKey).position;
+                Position p2 = isVertical
+                        ? new Position(var.x + positionKey + 1, var.y, 'h')
+                        : new Position(var.x, var.y + positionKey + 1, 'v');
+                p2.length = intersectingWord.length - var.intersecting.get(positionKey).point - 1;
 
+                intersectingWord.intersecting.entrySet().stream()
+                        .filter(entry -> entry.getKey() > var.intersecting.get(positionKey).point)
+                        .forEach(entry -> p2.intersecting.put(entry.getKey() - var.intersecting.get(positionKey).point - 1, entry.getValue()));
 
-
-                Position intersectingWord = var.intersecting.get(x).position;
-//                                        Position p2 = new Position(intersectingWord.x + var.intersecting.get(x - 1).point, intersectingWord.y, 'h');
-                Position p2 = new Position(var.x + x + 1, var.y, 'h');
-                p2.length = intersectingWord.length - var.intersecting.get(x).point - 1;
-                intersectingWord.intersecting.entrySet().stream().filter(stara -> stara.getKey() > var.intersecting.get(x).point).forEach(orel -> p2.intersecting.put(orel.getKey()-var.intersecting.get(x).point-1, orel.getValue()));
                 newVariables.add(p2);
-                newVariables.stream().filter(stara -> stara.equals(intersectingWord)).findFirst().get().length = var.intersecting.get(x).point;
-                newVariables.stream().filter(stara -> stara.equals(intersectingWord)).findFirst().get().intersecting
-                        .entrySet().removeIf(orel -> orel.getKey() >= var.intersecting.get(x).point);
+                Position updatedIntersectingWord = newVariables.stream().filter(stara -> stara.equals(intersectingWord)).findFirst().get();
+                updatedIntersectingWord.length = var.intersecting.get(positionKey).point;
+                updatedIntersectingWord.intersecting.entrySet().removeIf(entry -> entry.getKey() >= var.intersecting.get(positionKey).point);
 
                 if (p2.length > 0) {
-                    novDomain.put(p2, zboroviMapirani.get(p2.length).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
+                    novDomain.put(p2, zboroviMapirani.get(p2.length).values().stream()
+                            .flatMap(map -> map.values().stream().flatMap(Collection::stream))
+                            .collect(Collectors.toCollection(HashSet::new)));
                 } else {
-                    novDomain.put(p2, new HashSet<Word>());
+                    novDomain.put(p2, new HashSet<>());
                 }
 
-                if (var.intersecting.get(x).point != 0) {
-                    novDomain.put(intersectingWord, zboroviMapirani.get(var.intersecting.get(x).point).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
+                if (var.intersecting.get(positionKey).point != 0) {
+                    novDomain.put(intersectingWord, zboroviMapirani.get(var.intersecting.get(positionKey).point).values().stream()
+                            .flatMap(map -> map.values().stream().flatMap(Collection::stream))
+                            .collect(Collectors.toCollection(HashSet::new)));
                 } else {
-                    novDomain.put(intersectingWord, new HashSet<Word>());
+                    novDomain.put(intersectingWord, new HashSet<>());
                 }
-
-                i.set(p2.x);
-                int start = var.intersecting.get(x).point;
-                var.intersecting.get(x).position.intersecting.entrySet().forEach(orel -> {
-                    if(orel.getKey() > start)
-                    {
-                     //   orel.getValue().position.intersecting.entrySet().stream().filter(orel2 -> orel2.getValue().equals(var))
-                     //           .forEach(orel2 -> orel.getValue().position.intersecting.put(orel2.getKey(), new PositionIntersect(p2, i.get() - start - 1)));
-                        newVariables.stream().filter(stara -> stara.equals(orel.getValue().position)).findFirst().get().intersecting.put(orel.getValue().point, new PositionIntersect(p2, orel.getKey() - start - 1));
-                        i.getAndIncrement();
-                    }
-                    if(orel.getKey() == start)
-                    {
-                        newVariables.stream().filter(stara -> stara.equals(orel.getValue().position)).findFirst().get().intersecting.remove(orel.getValue().point);
-                    }
-                });
-
-//
-//                try {
-//                    Main.availableThreads.acquire();
-//
-//                } catch (InterruptedException e) {
-//                    throw new RuntimeException(e);
-//                }
 
                 CSP krstozbor = new CSP(newVariables, novDomain, zboroviMapirani);
                 krstozbor.addConstraint(new WordLengthConstraint(newVariables));
                 krstozbor.addConstraint(new AllDifferentConstraint(newVariables));
                 krstozbor.addConstraint(new IntersectionConstraint(newVariables));
                 krstozbor.addConstraint(new DifficultyConstraint(newVariables));
-                //System.out.println(this);
-                //System.out.println("===============");
-                //System.out.println(krstozbor);
-                //System.out.println("^^^^^^^^^^");
 
                 Map<Position, Word> solution2 = new TreeMap<>();
-                solution.entrySet().forEach(varSolution -> solution2.put(newVariables.stream().filter(stara -> stara.equals(varSolution.getKey())).findFirst().get(), varSolution.getValue()));
-//                Map<Position, String> resenie = krstozbor.backtrack(solution2);
-                //Map<Position, Word> resenie = krstozbor.backtrack(solution2);
+                solution.entrySet().forEach(varSolution -> solution2.put(
+                        newVariables.stream().filter(stara -> stara.equals(varSolution.getKey())).findFirst().get(),
+                        varSolution.getValue()));
 
-                System.out.println(Main.finalResenie.get());
-                if(Main.finalResenie.get() == null)
-                {
-                    System.out.println("DODELENO");
+                if (Main.finalResenie.get() == null) {
                     Main.taskManager.addTask(krstozbor);
                 }
-
-//                if (!Main.solutionFound) {
-//                    System.out.println("TEMP RESHENIE");
-//                    finalResenie.set(resenie);
-//                }
             });
         }
 
-        if(var.direction == 'h' && variables.stream().filter(orel -> orel.length >= 1).count() < 90)
-        {
-            emptyPositions = var.intersecting.entrySet().stream().filter(y -> y.getKey() > 0 && y.getKey() < var.length - 1 && !solution.containsKey(y.getValue().position)).map(y -> y.getKey()).sorted((x1, x2) -> {
-                int distanceToMiddle = Math.abs(var.length / 2);
-                return Integer.compare(Math.abs(x1 - distanceToMiddle), Math.abs(x2 - distanceToMiddle));
-            }).toList();
-
-            emptyPositions.forEach(y -> {
-                if (Main.finalResenie.get() != null) {
-                    return;
-                }
-
-                Position p = new Position(var.x, var.y + y + 1, var.direction);
-                p.length = var.length - y - 1;
-                var.intersecting.entrySet().stream().filter(stara -> stara.getKey() > y).forEach(orel -> p.intersecting.put(orel.getKey()-y-1, orel.getValue()));
-                List<Position> newVariables =  variables.stream().map(Position::copy).collect(Collectors.toCollection(ArrayList::new));
-                newVariables.forEach(presek -> {
-                    Map<Integer, PositionIntersect> preseci = variables.stream().filter(orel -> orel.equals(presek)).findFirst().get().intersecting;
-                    presek.intersecting = new HashMap<>();
-                    preseci.forEach((key, value) -> {
-                        Position intersectingPosition = value.position;
-                        Position newIntersectingPosition = newVariables.stream().filter(news -> news.y == intersectingPosition.y && news.x == intersectingPosition.x && news.direction != presek.direction).findFirst().get();
-                        presek.intersecting.put(key, new PositionIntersect(newIntersectingPosition, value.point));
-                    });
-                });
-                newVariables.add(p);
-                newVariables.stream().filter(stara -> stara.equals(var)).findFirst().get().length = y;
-                newVariables.stream().filter(stara -> stara.equals(var)).findFirst().get().intersecting = newVariables.stream().filter(stara -> stara.equals(var)).findFirst().get().intersecting.entrySet().stream().filter(orel -> orel.getKey() < y).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));;
-                Map<Position, HashSet<Word>> novDomain = new HashMap<>(domains);
-                novDomain.put(p, zboroviMapirani.get(p.length).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
-                novDomain.put(var, zboroviMapirani.get(y).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
-
-                AtomicInteger i = new AtomicInteger();
-                var.intersecting.entrySet().forEach(orel -> {
-                    if(orel.getKey() > y)
-                    {
-                        newVariables.stream().filter(stara -> stara.equals(orel.getValue().position)).findFirst().get().intersecting.put(orel.getValue().point, new PositionIntersect(p, orel.getKey() - y - 1));
-                        i.getAndIncrement();
-                    }
-                    if(orel.getKey() == y)
-                    {
-                        //orel.getValue().position.intersecting.remove(var.y - orel.getValue().position.y- 1);
-                        newVariables.stream().filter(stara -> stara.equals(orel.getValue().position)).findFirst().get().intersecting.remove(orel.getValue().point);
-                    }
-                });
-
-
-
-                Position intersectingWord = var.intersecting.get(y).position;
-//                                        Position p2 = new Position(intersectingWord.y + var.intersecting.get(y - 1).point, intersectingWord.x, 'v');
-                Position p2 = new Position(var.x, var.y + y + 1, 'v');
-                p2.length = intersectingWord.length - var.intersecting.get(y).point - 1;
-                intersectingWord.intersecting.entrySet().stream().filter(stara -> stara.getKey() > var.intersecting.get(y).point).forEach(orel -> p2.intersecting.put(orel.getKey()-var.intersecting.get(y).point-1, orel.getValue()));
-                newVariables.add(p2);
-                newVariables.stream().filter(stara -> stara.equals(intersectingWord)).findFirst().get().length = var.intersecting.get(y).point;
-                //newVariables.stream().filter(stara -> stara.equals(intersectingWord)).findFirst().get().intersecting =
-                //        newVariables.stream()
-                //                .filter(stara -> stara.equals(intersectingWord)).findFirst().orElseThrow(() -> new RuntimeException("Majka ti")).intersecting
-                //                .entrySet().stream()
-                //                .filter(orel -> orel.getKey() < var.intersecting.get(y).point)
-                //                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-                newVariables.stream().filter(stara -> stara.equals(intersectingWord)).findFirst().get().intersecting
-                                .entrySet().removeIf(orel -> orel.getKey() >= var.intersecting.get(y).point);
-
-                if (p2.length > 0) {
-                    novDomain.put(p2, zboroviMapirani.get(p2.length).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
-                } else {
-                    novDomain.put(p2, new HashSet<Word>());
-                }
-
-                if (var.intersecting.get(y).point != 0) {
-                    novDomain.put(intersectingWord, zboroviMapirani.get(var.intersecting.get(y).point).values().stream().flatMap(orel -> orel.values().stream().flatMap(orel2 -> orel2.stream())).collect(Collectors.toCollection(HashSet::new)));
-                } else {
-                    novDomain.put(intersectingWord, new HashSet<Word>());
-                }
-
-                i.set(p2.y);
-                int start = var.intersecting.get(y).point;
-                var.intersecting.get(y).position.intersecting.entrySet().forEach(orel -> {
-                    if(orel.getKey() > start)
-                    {
-                        //orel.getValue().position.intersecting.put(orel.getValue().point, new PositionIntersect(p2, orel.getKey() - start - 1));
-                        newVariables.stream().filter(stara -> stara.equals(orel.getValue().position)).findFirst().get().intersecting.put(orel.getValue().point, new PositionIntersect(p2, orel.getKey() - start - 1));
-                        i.getAndIncrement();
-                    }
-                    if(orel.getKey() == start)
-                    {
-                        newVariables.stream().filter(stara -> stara.equals(orel.getValue().position)).findFirst().get().intersecting.remove(orel.getValue().point);
-                    }
-                });
-
-
-                CSP krstozbor = new CSP(newVariables, novDomain, zboroviMapirani);
-                krstozbor.addConstraint(new WordLengthConstraint(newVariables));
-                krstozbor.addConstraint(new AllDifferentConstraint(newVariables));
-                krstozbor.addConstraint(new IntersectionConstraint(newVariables));
-                krstozbor.addConstraint(new DifficultyConstraint(newVariables));
-                //System.out.println(this);
-                //System.out.println("===============");
-                //System.out.println(krstozbor);
-                //System.out.println("^^^^^^^^^^");
-
-                Map<Position, Word> solution2 = new TreeMap<>();
-                solution.entrySet().forEach(varSolution -> solution2.put(newVariables.stream().filter(stara -> stara.equals(varSolution.getKey())).findFirst().get(), varSolution.getValue()));
-                Map<Position, Word> resenie = krstozbor.backtrack(solution2);
-
-                System.out.println(Main.finalResenie.get());
-                if(Main.finalResenie.get() == null)
-                {
-                    System.out.println("DODELENO");
-                    Main.taskManager.addTask(krstozbor);
-                }
-//                Map<Position, String> resenie = krstozbor.backtrack(solution2);
-
-//                if (resenie != null) {
-//                    System.out.println("TEMP RESHENIE");
-//                    finalResenie.set(resenie);
-//                }
-            });
-        }
-        System.out.println("CRKNA GLAVNIOT");
         return null;
     }
 
     @Override
     public Map<Position, Word> call() throws Exception {
-        System.out.println("Start");
         Map<Position, Word> res = backtrack(new HashMap<>());
-        System.out.println("KRAJ CALL");
         return res;
     }
 }

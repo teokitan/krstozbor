@@ -1,12 +1,9 @@
-import org.w3c.dom.ls.LSOutput;
-
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -85,31 +82,12 @@ class CustomPositionSet {
     public CustomPositionSet() {
         positions.addAll(IntStream.range(1, Main.length).mapToObj(x -> new Position(x, 0, 'h')).toList());
         positions.addAll(IntStream.range(1, Main.width).mapToObj(x -> new Position(0, x, 'v')).toList());
-
-//        for (int i = 0; i<5; i++) {
-//            for (int j = 0; j<7; j++) {
-//                positions.add(new Position(i,j));
-//            }
-//        }
     }
 
     public char[][] tabla() {
         char[][] tabla = new char[Main.length][Main.width];
         positions.forEach(x -> tabla[x.x][x.y] = 'X');
         return tabla;
-    }
-
-    public int iksovi() {
-        int orelorel = 0;
-        char[][] mat = tabla();
-
-        for (int i = 0; i < Main.length; i++) {
-            for (int j = 0; j < Main.width; j++) {
-                if (mat[i][j] == 'X') orelorel++;
-            }
-        }
-
-        return orelorel;
     }
 
     public boolean add(Position position) {
@@ -124,7 +102,6 @@ class CustomPositionSet {
             countIksovi--;
         }
 
-
         if (position.y == 1) {
             Position toRemove = new Position(position.x, 0);
             toRemove.direction = 'h';
@@ -132,13 +109,10 @@ class CustomPositionSet {
             countIksovi--;
         }
 
-
         char[][] tabla = tabla();
         tabla[position.x][position.y] = 'X';
         for (int i = 0; i < Main.length - 1; i++) {
             for (int j = 0; j < Main.width - 1; j++) {
-                // if (i < 5 && j < 7) continue;
-
                 if (i == 0 && j == 0) {
                     continue;
                 }
@@ -195,8 +169,7 @@ class Word implements Comparable<Word> {
     }
 
     public Word(String word, String rarity) {
-        this.word = word;
-        this.rarity = Integer.valueOf(rarity);
+        this(word, Integer.valueOf(rarity));
     }
 
     public int compareTo(Word otherWord) {
@@ -214,27 +187,18 @@ public class Main {
     public static final int length = 15;
     public static final int width = 15;
     public static final int iksoviCount = 120;
-    //    public static Semaphore availableThreads = new Semaphore(15);
-//    public static final ExecutorService executorService = Executors.newFixedThreadPool(15);
-//    public static volatile boolean solutionFound = false;
+
     public static AtomicReference<Map<Position, Word>> finalResenie = new AtomicReference<>();
     public static TaskManager taskManager = new TaskManager();
     public static LocalDateTime startTime = LocalDateTime.now();
-
-
-//    public static CompletionService<Map<Position, Word>> completionService = new ExecutorCompletionService<>(executorService);
-//    public final static LinkedBlockingQueue<Callable<Map<Position, Word>>> taskQueue = new LinkedBlockingQueue<>();
-
 
     public static void main(String[] args) throws FileNotFoundException {
         SplittableRandom random = new SplittableRandom();
         String azbuka = "абвгдѓеѕжзијклљмнњопрстќуфхцчџш";
 
-        BufferedReader br = new BufferedReader(new FileReader("allResults.txt"));
+        BufferedReader br = new BufferedReader(new FileReader("allWords.txt"));
         List<Word> zborovi = new ArrayList<>(br.lines().map(x -> new Word(x.split(",")[1], x.split(",")[2])).toList());
 
-
-//            String azbuka = "abcdefghijklmnopqrstuvwxyz";
         int maxDolzina = zborovi.stream().mapToInt(x -> x.word.length()).max().orElse(0);
         Map<Object, Long> dolzhina = zborovi.stream().collect(Collectors.groupingBy(x -> x.word.length(), Collectors.counting()));
         Map<Integer, Map<Character, Map<Integer, Set<Word>>>> zboroviMapirani = new TreeMap<>();
@@ -262,18 +226,16 @@ public class Main {
         Main.startTime = LocalDateTime.now();
         for (int ii = 0; ii <= 0; ii++) {
             while (true) {
-                char[][] tabla = new char[length][width];
+                char[][] tabla;
 
                 CustomPositionSet customPositionSet = new CustomPositionSet();
 
-                while (customPositionSet.positions.size() <= 115) {
+                while (customPositionSet.positions.size() <= iksoviCount) {
                     customPositionSet.add(new Position(random.nextInt(1, length), random.nextInt(1, width)));
                 }
-//                System.out.println(customPositionSet.countIksovi);
 
                 Map<Integer, Set<Position>> horizontalniZborovi = customPositionSet.positions.stream().filter(x -> x.direction == 'h').collect(Collectors.groupingBy(x -> x.x, TreeMap::new, Collectors.toCollection(TreeSet::new)));
                 Map<Integer, Set<Position>> vertikalniZborovi = customPositionSet.positions.stream().filter(x -> x.direction == 'v').collect(Collectors.groupingBy(x -> x.y, TreeMap::new, Collectors.toCollection(TreeSet::new)));
-
 
                 AtomicInteger prevCoordinate = new AtomicInteger();
                 horizontalniZborovi.keySet().forEach(x -> {
@@ -323,8 +285,6 @@ public class Main {
                         } catch (Exception e) {
                             pos.intersecting = new HashMap<>();
                         }
-
-                        // System.out.println(pos);
                     });
                 });
 
@@ -347,57 +307,25 @@ public class Main {
                     });
                 });
 
-//        List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length != 0).toList();
-//                List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length >= 4).toList();
                 List<Position> listaPozicii = customPositionSet.positions.stream().filter(x -> x.length != 0).toList();
 
                 Map<Position, HashSet<Word>> domain = listaPozicii.stream()
                         .collect(Collectors.toMap(
                                 x -> x,
                                 x -> (HashSet<Word>) zboroviMapirani.getOrDefault(x.length, new HashMap<>()).values().stream().flatMap(val -> val.values().stream().flatMap(Collection::stream)).distinct().collect(Collectors.toSet())));
-//                                x -> (HashSet<String>) zboroviMapirani.getOrDefault(x.length, new HashMap<>()).values().stream().flatMap(val -> val.values().stream().flatMap(Collection::stream)).distinct().collect(Collectors.toSet())));
 
                 CSP krstozbor = new CSP(listaPozicii, domain, zboroviMapirani);
                 krstozbor.addConstraint(new WordLengthConstraint(listaPozicii));
                 krstozbor.addConstraint(new AllDifferentConstraint(listaPozicii));
                 krstozbor.addConstraint(new IntersectionConstraint(listaPozicii));
                 krstozbor.addConstraint(new DifficultyConstraint(listaPozicii));
-                char[][] orelorel = customPositionSet.tabla();
-//                Map<Position, Word> resenie = krstozbor.backtrack(new TreeMap<>());
 
-                Map<Position, Word> resenie = null;
                 taskManager.addTask(krstozbor);
-                taskManager.startResutlsHandling();
-//                try {
-//                    // Start initial tasks
-//                    while (!taskQueue.isEmpty() && !solutionFound) {
-//                        Callable<Map<Position, Word>> task = taskQueue.poll();
-//                        if (task != null) {
-//                            completionService.submit(task);
-//                        }
-//                    }
-//
-//                    while (!solutionFound) {
-//                        Future<Map<Position, Word>> future = completionService.take(); // Blocks until a result is available
-//                        Map<Position, Word> solution = future.get();
-//                        if (solution != null) {
-//                            solutionFound = true;
-//                            finalResenie.set(solution);
-//                            System.out.println("Solution found: " + solution);
-//                            break;
-//                        }
-//                    }
-//                } catch (InterruptedException | ExecutionException e) {
-//                    e.printStackTrace();
-//                } finally {
-//                    executorService.shutdownNow(); // Shutdown all threads immediately
-//                }
-                ;
+                taskManager.startResultsHandling();
                 tabla = customPositionSet.tabla();
 
-
                 if (finalResenie.get() != null) {
-                    System.out.println("Vreme main: " + Duration.between(Main.startTime, LocalDateTime.now()).toMillis());
+                    System.out.println("Time main: " + Duration.between(Main.startTime, LocalDateTime.now()).toMillis());
                     for (Position pos : finalResenie.get().keySet()) {
                         if (pos.direction == 'h') {
                             for (int i = pos.y + 1; i <= pos.y + pos.length; i++) {
@@ -418,15 +346,9 @@ public class Main {
                         }
                         System.out.println();
                     }
-                    System.out.println(finalResenie.get());
                     break;
-                } else System.out.println("nema");
-//                break;
+                }
             }
-            System.out.println("KRAJ FOR");
-
-//            System.out.println("Milisekudni: " + milliseconds);
         }
-        System.out.println("KRAJ MAIN");
     }
 }

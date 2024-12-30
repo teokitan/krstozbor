@@ -1,4 +1,3 @@
-import javax.swing.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -13,14 +12,14 @@ public class TaskManager {
     private volatile boolean solutionFound = false;
     private AtomicInteger solutionCount = new AtomicInteger(0);
     private final Semaphore semaphore = new Semaphore(8);
-    private LocalDateTime startTime;
+    private LocalDateTime startTime = null;
 
 
     public TaskManager() {
         new Thread(this::consumeTasks).start();
     }
 
-    public void startResutlsHandling() {
+    public void startResultsHandling() {
         startTime = LocalDateTime.now();
         new Thread(this::handleResults).start();
     }
@@ -39,8 +38,7 @@ public class TaskManager {
             while (Main.finalResenie.get() == null) {
                 Callable<Map<Position, Word>> task = taskQueue.take();
                 semaphore.acquire();
-                System.out.println("Otvoreni: " + solutionCount.incrementAndGet());
-                System.out.println("OD QUEUE");
+                solutionCount.getAndIncrement();
                 completionService.submit(task);
             }
         } catch (InterruptedException e) {
@@ -55,16 +53,16 @@ public class TaskManager {
                 Future<Map<Position, Word>> future = completionService.take();
                 Map<Position, Word> solution = future.get();
                 semaphore.release();
-                System.out.println("KRAJ");
-                System.out.println(taskQueue.size());
                 if (solution != null) {
                     solutionFound = true;
-                    System.out.println("Vreme: " + Duration.between(startTime, LocalDateTime.now()).toMillis());
+                    System.out.println("Checked: " + solutionCount.get());
                     System.out.println("Start: " + Main.startTime);
-                    System.out.println("Kraj: " + LocalDateTime.now());
+                    System.out.println("End: " + LocalDateTime.now());
                     Main.finalResenie.set(solution);
                     System.out.println("Solution found: " + solution);
-                    executorService.shutdownNow();
+                    if (!executorService.awaitTermination(15, TimeUnit.SECONDS)) {
+                        executorService.shutdownNow(); // Force shutdown if tasks don’t complete in time
+                    }
                     break;
                 }
             }
